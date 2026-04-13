@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-coderag_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-coderag_pass}
     ports:
-      - "3306:3306"
+      - "${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
