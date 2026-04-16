@@ -1,0 +1,74 @@
+[
+  {
+    "query": "Why did the payment fail?",
+    "retrieved_files": [
+      "backend\\app\\services\\ingestion_service.py",
+      "backend\\app\\database.py",
+      "backend\\app\\exceptions.py",
+      "backend\\app\\main.py",
+      "backend\\app\\seed.py"
+    ],
+    "scores": [
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A"
+    ],
+    "count": 5
+  },
+  {
+    "query": "Handle database connection error",
+    "retrieved_files": [
+      "backend\\app\\main.py",
+      "backend\\app\\services\\ingestion_service.py",
+      "backend\\migrate_users.py",
+      "backend\\alembic\\env.py",
+      "backend\\app\\database.py"
+    ],
+    "scores": [
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A"
+    ],
+    "count": 5
+  },
+  {
+    "query": "Explain transaction processing logic",
+    "retrieved_files": [
+      "backend\\app\\main.py",
+      "backend\\app\\models\\statement.py",
+      "backend\\app\\routers\\statements.py",
+      "backend\\app\\services\\analytics_service.py",
+      "backend\\app\\services\\ingestion_service.py"
+    ],
+    "scores": [
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A"
+    ],
+    "count": 5
+  },
+  {
+    "query": "Where is the user authentication handled?",
+    "retrieved_files": [
+      "frontend\\src\\services\\api.js",
+      "backend\\debug_pdf.py",
+      "backend\\alembic\\versions\\2e773595c90a_add_user_id_to_statements.py",
+      "backend\\app\\api_version.py",
+      "backend\\app\\database.py"
+    ],
+    "scores": [
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A",
+      "N/A"
+    ],
+    "count": 5
+  }
+]

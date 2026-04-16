@@ -17,7 +17,7 @@ def _get_chroma_client() -> chromadb.HttpClient:
     from app.config import settings
     return chromadb.HttpClient(
         host=settings.resolved_chroma_host,
-        port=settings.CHROMA_PORT,
+        port=settings.resolved_chroma_port,
         settings=chromadb.Settings(anonymized_telemetry=False)
     )
 
@@ -83,12 +83,14 @@ def embed_and_store_chunks(chunks: list[dict], repo_id: str) -> int:
             except Exception as e:
                 logger.error(f"ChromaDB add failed: {e}")
 
-    logger.info(f"Stored {stored_count}/{len(chunks)} chunks for repo {repo_id}.")
+    msg = f"[STORE] Stored {stored_count}/{len(chunks)} chunks for repo {repo_id} in ChromaDB."
+    logger.info(msg)
+    print(msg)
     return stored_count
 
 
 def query_chromadb(query_embedding: list[float], repo_id: str, top_k: int = 5) -> list[dict]:
-    """Query ChromaDB for nearest code chunks."""
+    """Query ChromaDB for nearest code chunks with distance scores."""
     try:
         collection = get_or_create_collection(repo_id)
         results = collection.query(
@@ -98,15 +100,20 @@ def query_chromadb(query_embedding: list[float], repo_id: str, top_k: int = 5) -
         )
     except Exception as e:
         logger.warning(f"ChromaDB query failed: {e}")
+        print(f"[RETRIEVE] ChromaDB query failed for repo {repo_id}: {e}")
         return []
 
     items = []
 
     if not results or not results.get("ids") or not results["ids"][0]:
+        print(f"[RETRIEVE] ChromaDB returned 0 results for repo {repo_id}.")
         return items
+
+    print(f"[RETRIEVE] ChromaDB returned {len(results['ids'][0])} matched chunks for repo {repo_id}.")
 
     for i in range(len(results["ids"][0])):
         metadata = results["metadatas"][0][i] if results.get("metadatas") else {}
+        distance = results["distances"][0][i] if results.get("distances") else 1.0
 
         items.append(
             {
@@ -115,7 +122,8 @@ def query_chromadb(query_embedding: list[float], repo_id: str, top_k: int = 5) -
                 "name": metadata.get("name", ""),
                 "start_line": metadata.get("start_line", 0),
                 "end_line": metadata.get("end_line", 0),
-                "distance": results["distances"][0][i] if results.get("distances") else 0.0,
+                "distance": distance,
+                "score": round(1.0 - distance, 4),  # Convert distance to similarity score
             }
         )
 

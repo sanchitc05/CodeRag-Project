@@ -12,11 +12,8 @@ logger = logging.getLogger(__name__)
 
 INDEX_NAME: str = "coderag_logs"
 
-# Folders that are scanned for log files
-LOG_FOLDER_NAMES: set[str] = {"logs", "log"}
-
 # File extensions treated as log files
-LOG_EXTENSIONS: set[str] = {".log", ".txt"}
+LOG_EXTENSIONS: set[str] = {".log", ".txt", ".out"}
 
 
 def _get_es_client() -> Elasticsearch:
@@ -64,11 +61,6 @@ def index_logs_from_repo(repo_path: str, repo_id: str) -> int:
     actions: list[dict] = []
 
     for root, dirs, files in os.walk(repo_path):
-        # Only process files inside log directories
-        folder_name = os.path.basename(root).lower()
-        if folder_name not in LOG_FOLDER_NAMES:
-            continue
-
         for filename in files:
             ext = os.path.splitext(filename)[1].lower()
             if ext not in LOG_EXTENSIONS:
@@ -106,7 +98,10 @@ def index_logs_from_repo(repo_path: str, repo_id: str) -> int:
     success_count, errors = bulk(es, actions, chunk_size=500, raise_on_error=False)
     if errors:
         logger.warning(f"Elasticsearch bulk indexing had {len(errors)} errors.")
-    logger.info(f"Indexed {success_count} log lines for repo {repo_id}.")
+    
+    msg = f"[LOGS] Indexed {success_count} log lines for repo {repo_id}."
+    logger.info(msg)
+    print(msg)
     return success_count
 
 
@@ -139,10 +134,17 @@ def search_logs(query: str, repo_id: str, top_k: int = 5) -> list[dict]:
         response = es.search(index=INDEX_NAME, body=body)
     except Exception as e:
         logger.warning(f"Elasticsearch search failed: {e}")
+        print(f"[RETRIEVE] Elasticsearch search failed for repo {repo_id}: {e}")
         return []
 
     results: list[dict] = []
-    for hit in response.get("hits", {}).get("hits", []):
+    hits = response.get("hits", {}).get("hits", [])
+    if not hits:
+        print(f"[RETRIEVE] Elasticsearch returned 0 log results for repo {repo_id}.")
+        return []
+
+    print(f"[RETRIEVE] Elasticsearch returned {len(hits)} log lines for repo {repo_id}.")
+    for hit in hits:
         source = hit.get("_source", {})
         results.append(
             {

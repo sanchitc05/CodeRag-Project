@@ -7,12 +7,13 @@ from sqlalchemy.engine import make_url
 
 
 ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+ROOT_ENV_LOCAL = Path(__file__).resolve().parents[2] / ".env.local"
 BACKEND_ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
-if ROOT_ENV_FILE.exists():
-    load_dotenv(ROOT_ENV_FILE)
-elif BACKEND_ENV_FILE.exists():
-    load_dotenv(BACKEND_ENV_FILE)
+for env_file in [ROOT_ENV_LOCAL, ROOT_ENV_FILE, BACKEND_ENV_FILE]:
+    if env_file.exists():
+        load_dotenv(env_file)
+        break
 
 
 class Settings(BaseSettings):
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
 
     # MySQL
     MYSQL_URL: str = "mysql+pymysql://coderag_user:coderag_pass@mysql:3306/coderag"
-    MYSQL_HOST_PORT: int = 3306
+    MYSQL_HOST_PORT: int = 3307
     APP_ENV: str = "local"
 
     # Security
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     # ChromaDB
     CHROMA_HOST: str = "chromadb"
     CHROMA_PORT: int = 8000
+    CHROMA_HOST_PORT: int = 8001
 
     # Elasticsearch
     ELASTICSEARCH_URL: str = "http://elasticsearch:9200"
@@ -62,6 +64,13 @@ class Settings(BaseSettings):
         if self.APP_ENV.lower() != "docker" and self.CHROMA_HOST == "chromadb":
             return "127.0.0.1"
         return self.CHROMA_HOST
+
+    @property
+    def resolved_chroma_port(self) -> int:
+        """Return a Chroma port that works in both local and Docker runs."""
+        if self.APP_ENV.lower() != "docker" and self.CHROMA_HOST == "chromadb":
+            return self.CHROMA_HOST_PORT
+        return self.CHROMA_PORT
 
     @property
     def resolved_elasticsearch_url(self) -> str:

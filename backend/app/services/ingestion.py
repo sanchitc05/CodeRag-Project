@@ -55,6 +55,7 @@ def extract_chunks_from_repo(
 ) -> list[CodeChunk]:
     """Walk a repo directory and extract code chunks from all supported files."""
     all_chunks: list[CodeChunk] = []
+    file_count = 0
 
     for root, dirs, files in os.walk(repo_path):
         # Prune skipped directories in-place so os.walk won't descend into them
@@ -65,6 +66,7 @@ def extract_chunks_from_repo(
             if ext not in SUPPORTED_EXTENSIONS:
                 continue
 
+            file_count += 1
             file_path = os.path.join(root, filename)
             # Store path relative to repo root for portability
             relative_path = os.path.relpath(file_path, repo_path)
@@ -86,8 +88,9 @@ def extract_chunks_from_repo(
             all_chunks.extend(file_chunks)
 
     logger.info(
-        f"Extracted {len(all_chunks)} chunks from {repo_id} at {repo_path}."
+        f"[INGEST] Parsed {file_count} files, extracted {len(all_chunks)} chunks from {repo_id}."
     )
+    print(f"[INGEST] Parsed {file_count} files, extracted {len(all_chunks)} chunks from {repo_id}.")
     return all_chunks
 
 
@@ -98,6 +101,7 @@ def ingest_repository(github_url: str, repo_id: str) -> dict:
         chunks = extract_chunks_from_repo(repo_path, repo_id)
         return {
             "repo_id": repo_id,
+            "repo_path": repo_path,
             "total_chunks": len(chunks),
             "chunks": chunks,
             "status": "success",

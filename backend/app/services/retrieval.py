@@ -163,6 +163,7 @@ def retrieve_context(
             code_chunks = query_chromadb(query_embedding, repo_id, top_k)
         except Exception as e:
             logger.warning(f"ChromaDB query failed: {e}")
+            print(f"[RETRIEVE] ChromaDB exception: {e}")
 
     # BM25 keyword search in Elasticsearch
     log_results: list[dict] = []
@@ -170,9 +171,11 @@ def retrieve_context(
         log_results = search_logs(query, repo_id, top_k)
     except Exception as e:
         logger.warning(f"Elasticsearch search failed: {e}")
+        print(f"[RETRIEVE] Elasticsearch exception: {e}")
 
     if not code_chunks:
         try:
+            print(f"[RETRIEVE] No vector results. Triggering fallback search for {repo_id}…")
             code_chunks = _fallback_repo_search(query, repo_id, top_k)
             if code_chunks:
                 logger.info(
@@ -180,8 +183,14 @@ def retrieve_context(
                     len(code_chunks),
                     repo_id,
                 )
+                print(f"[RETRIEVE] Fallback found {len(code_chunks)} chunks.")
         except Exception as e:
             logger.warning(f"Fallback repo search failed: {e}")
+            print(f"[RETRIEVE] Fallback search exception: {e}")
+
+    retrieval_msg = f"[RETRIEVE] Final: {len(code_chunks)} code chunks, {len(log_results)} logs retrieved."
+    logger.info(retrieval_msg)
+    print(retrieval_msg)
 
     return RetrievalContext(
         query=query,

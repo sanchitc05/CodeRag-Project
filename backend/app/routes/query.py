@@ -25,19 +25,18 @@ logger = logging.getLogger(__name__)
 def run_ingestion_pipeline(github_url: str, repo_id: str) -> None:
     """Execute full ingestion pipeline so the repo is query-ready."""
     result = ingest_repository(github_url, repo_id)
+    repo_path = result.get("repo_path", "")
     chunks = result.get("chunks", [])
-    stored_chunks = embed_and_store_chunks(chunks, repo_id)
+    
+    stored_chunks_count = embed_and_store_chunks(chunks, repo_id)
+    indexed_logs_count = index_logs_from_repo(repo_path, repo_id)
 
-    repo_path = os.path.join(settings.resolved_repos_dir, repo_id)
-    indexed_logs = index_logs_from_repo(repo_path, repo_id)
-
-    logger.info(
-        "Ingestion pipeline completed for %s: extracted=%s stored=%s indexed_logs=%s",
-        repo_id,
-        result.get("total_chunks", 0),
-        stored_chunks,
-        indexed_logs,
+    msg = (
+        f"Ingestion pipeline completed for {repo_id}: "
+        f"path={repo_path} extracted={len(chunks)} stored={stored_chunks_count} logs={indexed_logs_count}"
     )
+    logger.info(msg)
+    print(f"[PIPELINE] {msg}")
 
 
 @router.post("/ingest", status_code=202)
