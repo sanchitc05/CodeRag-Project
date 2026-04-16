@@ -10,6 +10,8 @@ npm run dev
 
 Open `http://localhost:5173` in your browser. ✅ Done!
 
+The backend is not an npm project. Run it with Docker Compose or, for local development, install Python dependencies from `backend/requirements.txt` and start `uvicorn`.
+
 ---
 
 ## 5-Minute Full Stack
@@ -18,7 +20,10 @@ Open `http://localhost:5173` in your browser. ✅ Done!
 # Terminal 1: Backend
 cd backend
 # Ensure .env is set with DB credentials
-npm run dev
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # Terminal 2: Frontend  
 cd frontend
