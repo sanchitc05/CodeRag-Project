@@ -40,6 +40,7 @@ def get_user_history(
         items.append(
             HistoryItem(
                 id=record.id,
+                repo_id=record.repo_id,
                 query=record.query,
                 response=json.loads(record.response), # Needs parsing from text back to dict 
                 created_at=record.created_at,
@@ -63,6 +64,7 @@ def get_history_detail(
 
     return HistoryItem(
         id=record.id,
+        repo_id=record.repo_id,
         query=record.query,
         response=json.loads(record.response),
         created_at=record.created_at,

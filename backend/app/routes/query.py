@@ -9,6 +9,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
 
 from app.config import settings
+from app.database import SessionLocal
+from app.models.query_history import QueryHistory
 from app.models.user import User
 from app.schemas.query_schemas import IngestRequest, QueryRequest
 from app.services.agent_state import initial_state
@@ -61,16 +63,19 @@ def list_ingested_repos(current_user: User = Depends(get_current_user)):
     if not os.path.isdir(repos_dir):
         return {"repos": []}
 
-    repos = [
-        entry.name
-        for entry in os.scandir(repos_dir)
-        if entry.is_dir()
-    ]
+    repos = []
+    for entry in os.scandir(repos_dir):
+        if entry.is_dir():
+            # Only count as ingested if there are files besides .git
+            contents = [d.name for d in os.scandir(entry.path) if d.name != ".git"]
+            if contents:
+                repos.append(entry.name)
+    
     repos.sort()
     return {"repos": repos}
 
 
-async def stream_agent_steps(query: str, repo_id: str):
+async def stream_agent_steps(query: str, repo_id: str, user_id: int):
     """Generator to yield events from the LangGraph agent step-by-step."""
     state = initial_state(query, repo_id)
     final_result = None
@@ -118,6 +123,22 @@ async def stream_agent_steps(query: str, repo_id: str):
                 yield f"data: {json.dumps(event_data)}\n\n"
 
         if final_result is not None:
+            # Save to history
+            db = SessionLocal()
+            try:
+                history_entry = QueryHistory(
+                    user_id=user_id,
+                    repo_id=repo_id,
+                    query=query,
+                    response=json.dumps(final_result)
+                )
+                db.add(history_entry)
+                db.commit()
+            except Exception as he:
+                logger.error(f"Failed to save query history: {he}")
+            finally:
+                db.close()
+
             yield f"data: {json.dumps({'status': 'complete', 'result': final_result})}\n\n"
         else:
             yield f"data: {json.dumps({'status': 'error', 'message': 'Agent completed without a final response'})}\n\n"
@@ -132,6 +153,6 @@ async def run_query(
 ):
     """Run an agentic debugging query. Returns an SSE stream of thought process."""
     return StreamingResponse(
-        stream_agent_steps(request.query, request.repo_id),
+        stream_agent_steps(request.query, request.repo_id, current_user.id),
         media_type="text/event-stream"
     )

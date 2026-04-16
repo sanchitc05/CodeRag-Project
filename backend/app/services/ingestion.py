@@ -4,6 +4,7 @@ import logging
 import os
 
 import git
+import shutil
 
 from app.config import settings
 from app.utils.chunker import CodeChunk, chunk_file, SUPPORTED_EXTENSIONS
@@ -45,8 +46,12 @@ def clone_repository(github_url: str, repo_id: str) -> str:
         logger.info(f"Repository {repo_id} ready at {repo_path}.")
         return repo_path
     except git.exc.GitCommandError as e:
+        if os.path.exists(repo_path):
+            shutil.rmtree(repo_path)
         raise ValueError(f"Git operation failed for {github_url}: {e}") from e
     except Exception as e:
+        if os.path.exists(repo_path):
+            shutil.rmtree(repo_path)
         raise ValueError(f"Failed to clone {github_url}: {e}") from e
 
 
@@ -107,5 +112,9 @@ def ingest_repository(github_url: str, repo_id: str) -> dict:
             "status": "success",
         }
     except Exception as e:
+        # Cleanup directory if it was created but something failed
+        repo_path = os.path.join(REPOS_DIR, repo_id)
+        if os.path.exists(repo_path):
+            shutil.rmtree(repo_path)
         logger.error(f"Ingestion failed for {github_url}: {e}")
         raise
