@@ -7,24 +7,31 @@ import { ChatWindow } from '../components/chat/ChatWindow';
 import { ChatInput } from '../components/chat/ChatInput';
 import { useStream } from '../hooks/useStream';
 import { getSession } from '../api/history';
+import { getAvailableRepos } from '../api/query';
 import { Message } from '../types';
 
 export function ChatPage() {
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [activeRepoId, setActiveRepoId] = useState('');
   const [availableRepos, setAvailableRepos] = useState<string[]>([]);
   const { streamingStatus, isStreaming, result, error, sendQuery, reset } =
     useStream();
 
-  // Load repositories from localStorage
+  // Load repositories from the backend so the chat only uses repos that exist.
   useEffect(() => {
-    const stored = localStorage.getItem('coderag_repos');
-    const repos = stored ? JSON.parse(stored) : [];
-    setAvailableRepos(repos);
-    if (repos.length > 0) {
-      setActiveRepoId(repos[0]);
-    }
+    const loadRepos = async () => {
+      try {
+        const backendRepos = await getAvailableRepos();
+        setAvailableRepos(backendRepos);
+        localStorage.setItem('coderag_repos', JSON.stringify(backendRepos));
+      } catch {
+        const stored = localStorage.getItem('coderag_repos');
+        const repos = stored ? JSON.parse(stored) : [];
+        setAvailableRepos(repos);
+      }
+    };
+
+    loadRepos();
   }, []);
 
   // Load session if URL param exists
@@ -82,27 +89,34 @@ export function ChatPage() {
     ]);
 
     try {
-      await sendQuery(query, repoId);
+      const finalResult = await sendQuery(query, repoId);
 
-      // Update the assistant message with the result
-      if (result) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? {
-                  ...msg,
-                  content: result.root_cause || 'Debug complete',
-                  result,
-                  isStreaming: false,
-                }
-              : msg
-          )
-        );
-      }
-    } catch (err) {
-      toast.error(error || 'Query failed');
+      // Update the assistant message with the final stream result.
       setMessages((prev) =>
-        prev.filter((msg) => msg.id !== assistantMessageId)
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: finalResult.root_cause || 'Debug complete',
+                result: finalResult,
+                isStreaming: false,
+              }
+            : msg
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Query failed';
+      toast.error(message);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: 'Query failed. Please try again.',
+                isStreaming: false,
+              }
+            : msg
+        )
       );
     }
 

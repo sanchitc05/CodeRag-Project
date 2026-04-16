@@ -20,9 +20,10 @@ class IngestRequest(BaseModel):
     @field_validator("repo_id")
     @classmethod
     def validate_repo_id(cls, v: str) -> str:
-        if not re.match(r"^[a-zA-Z0-9_]{1,64}$", v):
+        v = v.strip()
+        if not re.match(r"^[a-zA-Z0-9](?:[a-zA-Z0-9_-]{0,62}[a-zA-Z0-9])?$", v):
             raise ValueError(
-                "repo_id must be alphanumeric + underscores only, max 64 chars"
+                "repo_id must be 1-64 chars, use letters/numbers/_/-, and cannot start or end with _ or -"
             )
         return v
 

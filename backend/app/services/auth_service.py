@@ -1,5 +1,6 @@
 """Authentication service: password hashing, JWT token management, user resolution."""
 
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
@@ -12,8 +13,10 @@ from app.config import settings
 from app.database import get_db
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
 # Module-level singletons
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -46,10 +49,12 @@ def decode_token(token: str) -> dict:
         return jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
-    except JWTError:
+    except JWTError as exc:
+        logger.warning("JWT validation failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalid or expired",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
@@ -58,18 +63,30 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     """FastAPI dependency — resolves the current authenticated user from the JWT."""
+    if not token:
+        logger.warning("Missing bearer token on protected request")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_token(token)
     email: str | None = payload.get("sub")
     if email is None:
+        logger.warning("JWT payload missing subject claim")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalid or expired",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     user = db.query(User).filter(User.email == email).first()
     if user is None:
+        logger.warning("Authenticated user not found for email=%s", email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return user

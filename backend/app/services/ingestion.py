@@ -10,7 +10,7 @@ from app.utils.chunker import CodeChunk, chunk_file, SUPPORTED_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
-REPOS_DIR: str = settings.REPOS_DIR
+REPOS_DIR: str = settings.resolved_repos_dir
 
 # Directories to skip during file tree traversal
 SKIP_DIRS: set[str] = {

@@ -21,7 +21,7 @@ LOG_EXTENSIONS: set[str] = {".log", ".txt"}
 
 def _get_es_client() -> Elasticsearch:
     """Create an Elasticsearch client."""
-    return Elasticsearch(settings.ELASTICSEARCH_URL)
+    return Elasticsearch(settings.resolved_elasticsearch_url)
 
 
 def ensure_index_exists() -> None:

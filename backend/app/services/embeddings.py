@@ -16,7 +16,7 @@ def _get_chroma_client() -> chromadb.HttpClient:
     """Create a ChromaDB HTTP client."""
     from app.config import settings
     return chromadb.HttpClient(
-        host=settings.CHROMA_HOST,
+        host=settings.resolved_chroma_host,
         port=settings.CHROMA_PORT,
         settings=chromadb.Settings(anonymized_telemetry=False)
     )

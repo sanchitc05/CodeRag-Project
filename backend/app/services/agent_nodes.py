@@ -81,7 +81,7 @@ def analyze_node(state: AgentState) -> dict:
     )
 
     try:
-        hypothesis = model_manager.generate(prompt, max_new_tokens=200)
+        hypothesis = model_manager.generate(prompt, max_new_tokens=120)
     except Exception as e:
         logger.error(f"[ANALYZE] Generation failed: {e}")
         hypothesis = f"Analysis failed: {e}"
@@ -172,8 +172,16 @@ def decide_node(state: AgentState) -> dict:
 
 def should_continue(state: AgentState) -> str:
     """Returns 'respond' if confident enough or max iterations hit, else 'analyze'."""
-    CONFIDENCE_THRESHOLD = 0.6
-    MAX_ITERATIONS = 3
+    CONFIDENCE_THRESHOLD = 0.5
+    MAX_ITERATIONS = 2
+
+    ctx = state.get("retrieval_context") or {}
+    has_code = bool(ctx.get("code_chunks"))
+    has_logs = bool(ctx.get("log_results"))
+
+    # If retrieval found nothing, avoid extra expensive analyze loops.
+    if not has_code and not has_logs:
+        return "respond"
 
     if state["confidence"] >= CONFIDENCE_THRESHOLD or state["iteration"] >= MAX_ITERATIONS:
         return "respond"
@@ -192,6 +200,28 @@ def respond_node(state: AgentState) -> dict:
     confidence = state.get("confidence", 0.0)
     iteration = state.get("iteration", 0)
 
+    if not evidence:
+        root_cause = (
+            "No repository evidence was retrieved for this query, so a reliable diagnosis cannot be produced yet."
+        )
+        suggested_fix = (
+            "Re-ingest the repository, confirm ChromaDB/Elasticsearch are reachable, "
+            "and retry with a specific code-level question that includes an error message or file name."
+        )
+        final_response: dict[str, Any] = {
+            "root_cause": root_cause,
+            "suggested_fix": suggested_fix,
+            "evidence": [],
+            "confidence": confidence,
+            "iterations": iteration,
+            "hypothesis_chain": list(state.get("hypothesis_history", [])),
+        }
+        return {
+            "root_cause": root_cause,
+            "suggested_fix": suggested_fix,
+            "final_response": final_response,
+        }
+
     evidence_files = ", ".join(e.get("file_path", "unknown") for e in evidence) or "none"
 
     # ── Prompt 1: Root Cause ─────────────────────────────────────────
@@ -205,7 +235,7 @@ def respond_node(state: AgentState) -> dict:
     )
 
     try:
-        root_cause = model_manager.generate(root_cause_prompt, max_new_tokens=150).strip()
+        root_cause = model_manager.generate(root_cause_prompt, max_new_tokens=90).strip()
     except Exception as e:
         logger.error(f"[RESPOND] Root-cause generation failed: {e}")
         root_cause = f"Could not determine root cause: {e}"
@@ -226,7 +256,7 @@ def respond_node(state: AgentState) -> dict:
     )
 
     try:
-        suggested_fix = model_manager.generate(fix_prompt, max_new_tokens=200).strip()
+        suggested_fix = model_manager.generate(fix_prompt, max_new_tokens=120).strip()
     except Exception as e:
         logger.error(f"[RESPOND] Fix generation failed: {e}")
         suggested_fix = f"Could not generate fix: {e}"

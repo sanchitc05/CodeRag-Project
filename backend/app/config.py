@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
@@ -54,6 +55,38 @@ class Settings(BaseSettings):
             local_url = db_url.set(host="127.0.0.1", port=self.MYSQL_HOST_PORT)
             return local_url.render_as_string(hide_password=False)
         return self.MYSQL_URL
+
+    @property
+    def resolved_chroma_host(self) -> str:
+        """Return a Chroma host that works in both local and Docker runs."""
+        if self.APP_ENV.lower() != "docker" and self.CHROMA_HOST == "chromadb":
+            return "127.0.0.1"
+        return self.CHROMA_HOST
+
+    @property
+    def resolved_elasticsearch_url(self) -> str:
+        """Return an Elasticsearch URL that works in both local and Docker runs."""
+        parsed = urlparse(self.ELASTICSEARCH_URL)
+        if self.APP_ENV.lower() != "docker" and parsed.hostname == "elasticsearch":
+            netloc = "127.0.0.1"
+            if parsed.port:
+                netloc = f"{netloc}:{parsed.port}"
+            return urlunparse((
+                parsed.scheme,
+                netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            ))
+        return self.ELASTICSEARCH_URL
+
+    @property
+    def resolved_repos_dir(self) -> str:
+        """Return a repo storage path that works in both local and Docker runs."""
+        if self.APP_ENV.lower() != "docker" and self.REPOS_DIR.startswith("/app/"):
+            return str(Path(__file__).resolve().parents[1] / "repos")
+        return self.REPOS_DIR
 
 
 settings = Settings()

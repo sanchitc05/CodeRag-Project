@@ -6,6 +6,23 @@ import { useAuthStore } from '../store/authStore';
 import { ingestRepo } from '../api/query';
 import { Spinner } from '../components/ui/Spinner';
 
+function formatIngestError(err: any): string {
+  const detail = err?.response?.data?.detail;
+
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    if (typeof first?.msg === 'string' && first.msg.trim()) {
+      return first.msg;
+    }
+  }
+
+  return err?.message || 'Ingestion failed';
+}
+
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const [githubUrl, setGithubUrl] = useState('');
@@ -56,8 +73,7 @@ export function SettingsPage() {
       setGithubUrl('');
       setRepoId('');
     } catch (err: any) {
-      const message = err.response?.data?.detail || err.message || 'Ingestion failed';
-      toast.error(message);
+      toast.error(formatIngestError(err));
     } finally {
       setIsIngestLoading(false);
     }

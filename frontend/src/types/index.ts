@@ -9,6 +9,13 @@ export interface User {
   access_token: string;
 }
 
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user_id: number;
+  email: string;
+}
+
 export interface EvidenceItem {
   file_path: string;
   start_line: number;
@@ -65,6 +72,7 @@ export interface IngestRequest {
 
 export interface IngestResponse {
   repo_id: string;
-  total_chunks: number;
+  total_chunks?: number;
   status: string;
+  message?: string;
 }

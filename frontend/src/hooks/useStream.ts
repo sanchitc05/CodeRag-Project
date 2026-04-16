@@ -7,7 +7,7 @@ interface UseStreamReturn {
   isStreaming: boolean;
   result: DebugResult | null;
   error: string | null;
-  sendQuery: (query: string, repoId: string) => Promise<void>;
+  sendQuery: (query: string, repoId: string) => Promise<DebugResult>;
   reset: () => void;
 }
 
@@ -17,11 +17,13 @@ export function useStream(): UseStreamReturn {
   const [result, setResult] = useState<DebugResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const sendQuery = async (query: string, repoId: string): Promise<void> => {
+  const sendQuery = async (query: string, repoId: string): Promise<DebugResult> => {
     setIsStreaming(true);
     setStreamingStatus(null);
     setResult(null);
     setError(null);
+    let finalResult: DebugResult | null = null;
+    let streamError: string | null = null;
 
     try {
       await streamQuery(query, repoId, (event) => {
@@ -35,11 +37,13 @@ export function useStream(): UseStreamReturn {
         } else if (event.status === 'analyzing') {
           setStreamingStatus('Running reasoning agent...');
         } else if (event.status === 'complete') {
-          setResult(event.result || null);
+          finalResult = event.result || null;
+          setResult(finalResult);
           setIsStreaming(false);
           setStreamingStatus(null);
         } else if (event.status === 'error') {
-          setError(event.message || 'An error occurred');
+          streamError = event.message || 'An error occurred';
+          setError(streamError);
           setIsStreaming(false);
           setStreamingStatus(null);
         }
@@ -49,7 +53,20 @@ export function useStream(): UseStreamReturn {
       setError(message);
       setIsStreaming(false);
       setStreamingStatus(null);
+      throw new Error(message);
     }
+
+    if (streamError) {
+      throw new Error(streamError);
+    }
+
+    if (!finalResult) {
+      setIsStreaming(false);
+      setStreamingStatus(null);
+      throw new Error('No final result received from stream');
+    }
+
+    return finalResult;
   };
 
   const reset = () => {

@@ -24,6 +24,17 @@ export function ChatInput({
     availableRepos[0] || ''
   );
 
+  useEffect(() => {
+    if (!availableRepos.length) {
+      setSelectedRepo('');
+      return;
+    }
+
+    if (!availableRepos.includes(selectedRepo)) {
+      setSelectedRepo(availableRepos[0]);
+    }
+  }, [availableRepos, selectedRepo]);
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {

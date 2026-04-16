@@ -10,7 +10,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const authStore = useAuthStore();
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +22,12 @@ export function LoginPage() {
 
     setIsLoading(true);
     try {
-      const user = await loginApi(email, password);
-      authStore.login(user);
+      const auth = await loginApi(email, password);
+      login({
+        user_id: auth.user_id,
+        email: auth.email,
+        access_token: auth.access_token,
+      });
       toast.success('Logged in successfully');
       navigate('/chat');
     } catch (err: any) {

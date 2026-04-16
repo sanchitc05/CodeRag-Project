@@ -13,6 +13,11 @@ export async function ingestRepo(
   return response.data;
 }
 
+export async function getAvailableRepos(): Promise<string[]> {
+  const response = await client.get<{ repos: string[] }>('/repos');
+  return response.data.repos || [];
+}
+
 export async function streamQuery(
   query: string,
   repo_id: string,

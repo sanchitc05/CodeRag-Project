@@ -11,7 +11,7 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const authStore = useAuthStore();
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +33,12 @@ export function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const user = await registerApi(email, password);
-      authStore.login(user);
+      const auth = await registerApi(email, password);
+      login({
+        user_id: auth.user_id,
+        email: auth.email,
+        access_token: auth.access_token,
+      });
       toast.success('Account created successfully');
       navigate('/chat');
     } catch (err: any) {
