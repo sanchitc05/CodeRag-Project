@@ -2,72 +2,72 @@
   {
     "query": "Why did the payment fail?",
     "retrieved_files": [
-      "backend\\app\\services\\ingestion_service.py",
-      "backend\\app\\database.py",
-      "backend\\app\\exceptions.py",
+      "backend\\app\\__init__.py",
+      "backend\\debug_pdf.py",
       "backend\\app\\main.py",
-      "backend\\app\\seed.py"
+      "backend\\app\\models\\security.py",
+      "backend\\app\\models\\insight.py"
     ],
     "scores": [
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A"
+      0.9492,
+      0.9446,
+      0.9389,
+      0.9364,
+      0.9356
     ],
     "count": 5
   },
   {
     "query": "Handle database connection error",
     "retrieved_files": [
+      "backend\\app\\__init__.py",
+      "backend\\app\\analytics\\__init__.py",
+      "backend\\debug_pdf.py",
       "backend\\app\\main.py",
-      "backend\\app\\services\\ingestion_service.py",
-      "backend\\migrate_users.py",
-      "backend\\alembic\\env.py",
-      "backend\\app\\database.py"
+      "backend\\app\\parsers\\base_parser.py"
     ],
     "scores": [
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A"
+      0.9545,
+      0.9468,
+      0.9213,
+      0.9146,
+      0.9142
     ],
     "count": 5
   },
   {
     "query": "Explain transaction processing logic",
     "retrieved_files": [
+      "backend\\app\\__init__.py",
       "backend\\app\\main.py",
-      "backend\\app\\models\\statement.py",
-      "backend\\app\\routers\\statements.py",
-      "backend\\app\\services\\analytics_service.py",
-      "backend\\app\\services\\ingestion_service.py"
+      "backend\\app\\analytics\\__init__.py",
+      "backend\\debug_pdf.py",
+      "backend\\app\\parsers\\base_parser.py"
     ],
     "scores": [
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A"
+      0.968,
+      0.943,
+      0.9416,
+      0.9414,
+      0.9368
     ],
     "count": 5
   },
   {
     "query": "Where is the user authentication handled?",
     "retrieved_files": [
-      "frontend\\src\\services\\api.js",
+      "backend\\app\\__init__.py",
       "backend\\debug_pdf.py",
-      "backend\\alembic\\versions\\2e773595c90a_add_user_id_to_statements.py",
-      "backend\\app\\api_version.py",
-      "backend\\app\\database.py"
+      "backend\\app\\analytics\\__init__.py",
+      "backend\\app\\main.py",
+      "backend\\app\\parsers\\base_parser.py"
     ],
     "scores": [
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A",
-      "N/A"
+      0.9631,
+      0.9421,
+      0.9411,
+      0.9406,
+      0.9323
     ],
     "count": 5
   }
