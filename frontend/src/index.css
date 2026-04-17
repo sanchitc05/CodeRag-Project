@@ -36,5 +36,76 @@
 /* Force autoprefixer to keep the -webkit prefixes for line-clamp */
 
 body {
-  @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-white;
+  @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  @apply bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100;
+}
+
+@layer components {
+  /* Premium Card Styles */
+  .card-gradient {
+    @apply border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-sm;
+  }
+  
+  /* Markdown Typography Refinements */
+  .prose {
+    --tw-prose-body: theme('colors.gray.700');
+    --tw-prose-headings: theme('colors.gray.900');
+    --tw-prose-links: theme('colors.blue.600');
+    --tw-prose-bold: theme('colors.gray.900');
+    --tw-prose-counters: theme('colors.gray.500');
+    --tw-prose-bullets: theme('colors.gray.400');
+    --tw-prose-hr: theme('colors.gray.100');
+    --tw-prose-quotes: theme('colors.gray.900');
+    --tw-prose-quote-borders: theme('colors.blue.500');
+    --tw-prose-captions: theme('colors.gray.500');
+    --tw-prose-code: theme('colors.pink.600');
+    --tw-prose-pre-code: theme('colors.gray.200');
+    --tw-prose-pre-bg: theme('colors.gray.800');
+    --tw-prose-th-borders: theme('colors.gray.200');
+    --tw-prose-td-borders: theme('colors.gray.100');
+  }
+
+  .dark .prose {
+    --tw-prose-body: theme('colors.gray.300');
+    --tw-prose-headings: theme('colors.white');
+    --tw-prose-links: theme('colors.blue.400');
+    --tw-prose-bold: theme('colors.white');
+    --tw-prose-counters: theme('colors.gray.400');
+    --tw-prose-bullets: theme('colors.gray.600');
+    --tw-prose-hr: theme('colors.gray.800/50');
+    --tw-prose-quotes: theme('colors.gray.100');
+    --tw-prose-quote-borders: theme('colors.blue.500');
+    --tw-prose-captions: theme('colors.gray.400');
+    --tw-prose-code: theme('colors.pink.400');
+    --tw-prose-pre-code: theme('colors.gray.300');
+    --tw-prose-pre-bg: 'rgb(0 0 0 / 50%)';
+    --tw-prose-th-borders: theme('colors.gray.700');
+    --tw-prose-td-borders: theme('colors.gray.800');
+  }
+
+  /* Zero Raw Markdown Symbols - Ensure cleaner rendering */
+  .prose code::before,
+  .prose code::after {
+    content: "" !important;
+  }
+}
+
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 dark:bg-gray-800 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors;
 }
