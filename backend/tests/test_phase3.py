@@ -11,8 +11,11 @@ exists in ChromaDB with embedded chunks.
 import sys
 import os
 
-# Ensure the app package is importable
-sys.path.insert(0, "/app")
+# Ensure the app package is importable from Docker (/app) or local (backend/) root
+_here = os.path.dirname(os.path.abspath(__file__))
+_backend_root = os.path.dirname(_here)
+sys.path.insert(0, "/app")                 # Docker
+sys.path.insert(0, _backend_root)          # Local
 
 
 def run_tests() -> None:

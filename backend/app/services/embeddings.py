@@ -89,8 +89,21 @@ def embed_and_store_chunks(chunks: list[dict], repo_id: str) -> int:
     return stored_count
 
 
-def query_chromadb(query_embedding: list[float], repo_id: str, top_k: int = 5) -> list[dict]:
-    """Query ChromaDB for nearest code chunks with distance scores."""
+def query_chromadb(
+    query_embedding: list[float],
+    repo_id: str,
+    top_k: int = 5,
+    similarity_threshold: float = 0.55,
+) -> list[dict]:
+    """Query ChromaDB for nearest code chunks with distance scores.
+
+    Args:
+        query_embedding: Pre-computed query vector from embed_query().
+        repo_id: Which ChromaDB collection to search.
+        top_k: Maximum number of results to return.
+        similarity_threshold: Minimum cosine similarity (0–1). Chunks with
+            similarity < threshold are discarded. Default 0.5.
+    """
     try:
         collection = get_or_create_collection(repo_id)
         results = collection.query(
@@ -109,11 +122,21 @@ def query_chromadb(query_embedding: list[float], repo_id: str, top_k: int = 5) -
         print(f"[RETRIEVE] ChromaDB returned 0 results for repo {repo_id}.")
         return items
 
-    print(f"[RETRIEVE] ChromaDB returned {len(results['ids'][0])} matched chunks for repo {repo_id}.")
+    raw_count = len(results["ids"][0])
+    print(f"[RETRIEVE] ChromaDB returned {raw_count} raw chunks for repo {repo_id}.")
 
-    for i in range(len(results["ids"][0])):
+    for i in range(raw_count):
         metadata = results["metadatas"][0][i] if results.get("metadatas") else {}
         distance = results["distances"][0][i] if results.get("distances") else 1.0
+        # ChromaDB cosine distance: distance=0 means identical, distance=1 means orthogonal
+        # Convert to similarity: similarity = 1 - distance
+        similarity = round(1.0 - distance, 4)
+
+        if similarity < similarity_threshold:
+            logger.debug(
+                f"[RETRIEVE] Skipping chunk (similarity={similarity:.3f} < threshold={similarity_threshold})"
+            )
+            continue
 
         items.append(
             {
@@ -123,8 +146,16 @@ def query_chromadb(query_embedding: list[float], repo_id: str, top_k: int = 5) -
                 "start_line": metadata.get("start_line", 0),
                 "end_line": metadata.get("end_line", 0),
                 "distance": distance,
-                "score": round(1.0 - distance, 4),  # Convert distance to similarity score
+                "score": similarity,
             }
         )
+
+    if not items:
+        print(
+            f"[RETRIEVE] [RELEVANCE_FAILURE] 0/{raw_count} chunks passed similarity "
+            f"threshold of {similarity_threshold} for repo {repo_id}."
+        )
+    else:
+        print(f"[RETRIEVE] {len(items)}/{raw_count} chunks passed similarity threshold for repo {repo_id}.")
 
     return items

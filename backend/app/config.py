@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     MODEL_CACHE_DIR: str = "/app/model_cache"
     REPOS_DIR: str = "/app/repos"
 
+    # Gemma 3 via Google AI API
+    GEMINI_API_KEY: str = ""
+    GEMMA_MODEL: str = "gemma-3-4b-it"
+
     class Config:
         env_file = ".env"
         case_sensitive = True

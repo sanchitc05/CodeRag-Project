@@ -129,7 +129,7 @@ def _fallback_repo_search(query: str, repo_id: str, top_k: int) -> list[dict]:
             break
 
     if not scored:
-        return _fallback_overview_chunks(repo_path, top_k)
+        return []
 
     scored.sort(key=lambda x: x[0], reverse=True)
     return [item for _, item in scored[:top_k]]
@@ -149,9 +149,10 @@ def retrieve_context(
     query: str, repo_id: str, top_k: int = 5
 ) -> RetrievalContext:
     """Retrieve relevant code chunks and log lines for a debugging query."""
-    # Embed the query for vector search using code embeddings to match dimensionality
+    # Embed the query using the SAME model used at ingestion time (MiniLM)
+    # IMPORTANT: must use embed_query() (not embed_code()) for semantic consistency
     try:
-        query_embedding = model_manager.embed_code(query)
+        query_embedding = model_manager.embed_query(query)
     except Exception as e:
         logger.error(f"Query embedding failed: {e}")
         query_embedding = None

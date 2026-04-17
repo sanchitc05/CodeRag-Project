@@ -1,98 +1,127 @@
-"""Loads and caches all AI models for CodeRAG."""
+"""Loads and caches all AI models for CodeRAG.
+
+Embedding model: sentence-transformers/all-MiniLM-L6-v2
+  - Used for BOTH ingestion (embed_code) and retrieval (embed_query)
+  - Consistent 384-dimensional cosine-space vectors
+
+Generation model: Gemma 3 via Google AI API (google-genai SDK)
+  - Model: gemma-3-4b-it  (instruction-tuned, excellent at code reasoning)
+  - Falls back with a clear error if GEMINI_API_KEY is missing or invalid
+  - No local GPU required — inference happens in the cloud (free tier)
+"""
 
 import logging
 from typing import Optional
 
-import torch
 from sentence_transformers import SentenceTransformer
-from transformers import AutoModel, AutoModelForSeq2SeqLM, AutoTokenizer
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-MODEL_CACHE_DIR: str = settings.MODEL_CACHE_DIR
+# Embedding model — single source of truth, must match ingestion
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 class ModelManager:
     """Manages loading, caching, and inference for all CodeRAG models."""
 
     def __init__(self) -> None:
-        """Load all 3 models from cache if available, download otherwise."""
-        self._code_tokenizer = None
-        self._code_model = None
-        self._gen_tokenizer = None
-        self._gen_model = None
+        self._embed_model: Optional[SentenceTransformer] = None
+        self._genai_client = None   # google.genai.Client
+        self._gen_model_name: str = settings.GEMMA_MODEL
 
-        self._load_code_model()
+        self._load_embedding_model()
         self._load_generation_model()
 
     # ── Private loaders ──────────────────────────────────────────────
 
-
-    def _load_code_model(self) -> None:
-        """Load microsoft/codebert-base for code embedding."""
+    def _load_embedding_model(self) -> None:
+        """Load sentence-transformers/all-MiniLM-L6-v2 for embedding."""
         try:
-            logger.info("Loading CodeBERT model…")
-            self._code_tokenizer = AutoTokenizer.from_pretrained(
-                "microsoft/codebert-base",
-                cache_dir=MODEL_CACHE_DIR,
+            logger.info(f"Loading embedding model: {EMBED_MODEL_NAME}…")
+            self._embed_model = SentenceTransformer(
+                EMBED_MODEL_NAME,
+                cache_folder=settings.MODEL_CACHE_DIR,
             )
-            self._code_model = AutoModel.from_pretrained(
-                "microsoft/codebert-base",
-                cache_dir=MODEL_CACHE_DIR,
-            )
-            self._code_model.eval()
-            logger.info("CodeBERT model loaded successfully.")
+            logger.info("Embedding model loaded successfully.")
         except Exception as e:
-            logger.error(f"Failed to load CodeBERT model: {e}")
-            raise RuntimeError(f"CodeBERT load failed: {e}") from e
+            logger.error(f"Failed to load embedding model: {e}")
+            raise RuntimeError(f"Embedding model load failed: {e}") from e
 
     def _load_generation_model(self) -> None:
-        """Load google/flan-t5-base for text generation."""
+        """Initialise the Google AI (Gemma 3) client."""
+        api_key = settings.GEMINI_API_KEY
+        if not api_key:
+            raise RuntimeError(
+                "GEMINI_API_KEY is not set. "
+                "Get a free key at https://aistudio.google.com/apikey "
+                "and add it to your .env.local file."
+            )
         try:
-            logger.info("Loading FLAN-T5 generation model…")
-            self._gen_tokenizer = AutoTokenizer.from_pretrained(
-                "google/flan-t5-base",
-                cache_dir=MODEL_CACHE_DIR,
+            from google import genai  # type: ignore[import-untyped]
+
+            self._genai_client = genai.Client(api_key=api_key)
+            logger.info(
+                f"Google AI client initialised. Generation model: {self._gen_model_name}"
             )
-            self._gen_model = AutoModelForSeq2SeqLM.from_pretrained(
-                "google/flan-t5-base",
-                cache_dir=MODEL_CACHE_DIR,
-            )
-            self._gen_model.eval()
-            logger.info("FLAN-T5 generation model loaded successfully.")
+        except ImportError as e:
+            raise RuntimeError(
+                "google-genai package not found. "
+                "Run: pip install google-genai>=1.0.0"
+            ) from e
         except Exception as e:
-            logger.error(f"Failed to load FLAN-T5 model: {e}")
-            raise RuntimeError(f"FLAN-T5 load failed: {e}") from e
+            logger.error(f"Failed to initialise Google AI client: {e}")
+            raise RuntimeError(f"Google AI client init failed: {e}") from e
 
     # ── Public inference methods ─────────────────────────────────────
 
-
     def embed_code(self, code: str) -> list[float]:
-        """Embed a code string using CodeBERT with mean pooling."""
-        inputs = self._code_tokenizer(
-            code,
-            return_tensors="pt",
-            max_length=512,
-            truncation=True,
-            padding=True,
-        )
-        with torch.no_grad():
-            output = self._code_model(**inputs)
-        # Mean-pool over the sequence dimension
-        embeddings = output.last_hidden_state.mean(dim=1).squeeze().tolist()
-        return embeddings
+        """Embed a code/text string using all-MiniLM-L6-v2.
 
-    def generate(self, prompt: str, max_new_tokens: int = 256) -> str:
-        """Run FLAN-T5 generation and return decoded output string."""
-        inputs = self._gen_tokenizer(prompt, return_tensors="pt")
-        with torch.no_grad():
-            output_ids = self._gen_model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
+        Used during INGESTION to embed code chunks stored in ChromaDB.
+        Produces 384-dimensional float vectors in cosine space.
+        """
+        return self._embed_model.encode(
+            code,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+        ).tolist()
+
+    def embed_query(self, query: str) -> list[float]:
+        """Embed a user query string using the same model as embed_code.
+
+        Used during RETRIEVAL so stored vectors and query vectors are
+        in the same space — critical for meaningful cosine similarity.
+        """
+        return self._embed_model.encode(
+            query,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+        ).tolist()
+
+    def generate(self, prompt: str, max_new_tokens: int = 512) -> str:
+        """Call Gemma 3 via Google AI API and return the response text.
+
+        Args:
+            prompt: Full prompt string (system + user context combined).
+            max_new_tokens: Upper bound on output tokens (soft limit).
+
+        Returns:
+            The model's text response, stripped of leading/trailing whitespace.
+        """
+        if self._genai_client is None:
+            raise RuntimeError("Generation model not initialised.")
+
+        try:
+            response = self._genai_client.models.generate_content(
+                model=self._gen_model_name,
+                contents=prompt,
             )
-        return self._gen_tokenizer.decode(output_ids[0], skip_special_tokens=True)
+            return response.text.strip()
+        except Exception as e:
+            logger.error(f"[GENERATE] Gemma API call failed: {e}")
+            raise
 
 
 # ── Module-level singleton ──────────────────────────────────────────
