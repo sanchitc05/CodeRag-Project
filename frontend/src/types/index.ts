@@ -8,6 +8,8 @@ export interface User {
   user_id: number;
   email: string;
   access_token: string;
+  username?: string;
+  full_name?: string;
 }
 
 export interface AuthResponse {
@@ -15,6 +17,8 @@ export interface AuthResponse {
   token_type: string;
   user_id: number;
   email: string;
+  username?: string;
+  full_name?: string;
 }
 
 export interface EvidenceItem {

@@ -25,3 +25,20 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user_id: int
     email: str
+    username: str | None = None
+    full_name: str | None = None
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: str | None = None
+    username: str | None = None
+
+
+class UserProfileResponse(BaseModel):
+    id: int
+    email: str
+    username: str | None = None
+    full_name: str | None = None
+
+    class Config:
+        from_attributes = True

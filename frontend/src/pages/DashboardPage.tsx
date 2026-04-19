@@ -94,7 +94,7 @@ export const DashboardPage: React.FC = () => {
             <HistoryCard
               key={item.id}
               item={item}
-              onNavigate={() => navigate(`/chat?session=${item.id}`)}
+              onNavigate={() => navigate('/chat', { state: { session: item } })}
               onDelete={() => handleDelete(item.id)}
               isDeleting={deleteSessionMutation.isPending}
             />

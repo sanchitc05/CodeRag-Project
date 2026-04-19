@@ -4,7 +4,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check, User, Bot, Sparkles, Terminal } from 'lucide-react';
-import { Message } from '../../types/chat';
+import { Message } from '../../types';
+import { DebugReport } from './DebugReport';
 
 /**
  * Enhanced Message Bubble Component
@@ -126,6 +127,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               </div>
             ) : (
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+            )}
+            
+            {/* If there's a result object, render the full DebugReport */}
+            {isBot && message.result && (
+              <div className="mt-4 border-t border-border pt-4">
+                <DebugReport result={message.result} />
+              </div>
             )}
           </div>
           

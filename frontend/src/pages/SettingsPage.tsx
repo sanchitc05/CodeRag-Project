@@ -10,6 +10,8 @@ import {
   Globe
 } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
+import { useAuthStore } from '../store/authStore';
+import { updateProfile } from '../api/auth';
 import { toast } from 'react-hot-toast';
 
 /**
@@ -18,28 +20,52 @@ import { toast } from 'react-hot-toast';
  */
 
 export const SettingsPage: React.FC = () => {
-  const { theme, toggleTheme, settingsTab, setSettingsTab, userProfile, updateProfile } = useConfigStore();
-  const [formData, setFormData] = React.useState(userProfile);
+  const { theme, toggleTheme, settingsTab, setSettingsTab } = useConfigStore();
+  const { user, updateUser } = useAuthStore();
+  
+  const [formData, setFormData] = React.useState({
+    fullName: user?.full_name || '',
+    username: user?.username || user?.email?.split('@')[0] || '',
+  });
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Sync formData when userProfile changes
+  // Sync formData when user changes
   React.useEffect(() => {
-    setFormData(userProfile);
-  }, [userProfile]);
+    if (user) {
+      setFormData({
+        fullName: user.full_name || '',
+        username: user.username || user.email?.split('@')[0] || '',
+      });
+    }
+  }, [user]);
 
   const sections = [
     { id: 'profile', title: 'Profile', icon: User, description: 'Manage your public identity and account details.' },
     { id: 'appearance', title: 'Appearance', icon: Monitor, description: 'Customize themes and interface settings.' },
-    { id: 'account', title: 'Account', icon: Globe, description: 'Manage regional settings and account status.' },
   ];
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    updateProfile(formData);
-    setIsSaving(false);
-    toast.success('Settings saved successfully');
+    try {
+      // PERSISTENCE: Call the new backend endpoint
+      await updateProfile({
+        fullName: formData.fullName,
+        username: formData.username
+      });
+      
+      // Update local state in authStore
+      updateUser({
+        full_name: formData.fullName,
+        username: formData.username
+      });
+      
+      toast.success('Settings updated successfully');
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderProfileSection = () => (
@@ -88,7 +114,10 @@ export const SettingsPage: React.FC = () => {
 
       <div className="flex justify-end gap-3 pt-4 items-center">
         <button
-          onClick={() => setFormData(userProfile)}
+          onClick={() => setFormData({
+            fullName: user?.full_name || '',
+            username: user?.username || user?.email?.split('@')[0] || ''
+          })}
           className="px-6 py-2.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-background transition-all"
         >
           Discard
@@ -144,31 +173,6 @@ export const SettingsPage: React.FC = () => {
     </div>
   );
 
-  const renderAccountSection = () => (
-    <div className="space-y-6 animate-fade-in text-text-primary">
-      <div className="p-6 bg-background border border-border rounded-2xl">
-        <h4 className="text-sm font-bold mb-4">Regional Settings</h4>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Language</span>
-            <span className="font-bold">English (US)</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Timezone</span>
-            <span className="font-bold">UTC-5 (New York)</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6 bg-rose-500/5 border border-rose-500/20 rounded-2xl group">
-        <h4 className="text-sm font-bold text-rose-500 mb-2">Danger Zone</h4>
-        <p className="text-[10px] text-text-muted mb-4 leading-relaxed">Permanently delete your account and all associated data. This action is irreversible.</p>
-        <button className="px-4 py-2 border border-rose-500 text-rose-500 rounded-xl text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-all uppercase tracking-widest">
-          Delete Account
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 last:pb-20">
@@ -228,7 +232,6 @@ export const SettingsPage: React.FC = () => {
             <div className="p-8">
               {settingsTab === 'profile' && renderProfileSection()}
               {settingsTab === 'appearance' && renderAppearanceSection()}
-              {settingsTab === 'account' && renderAccountSection()}
             </div>
           </div>
         </div>

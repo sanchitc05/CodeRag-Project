@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth_schemas import RegisterRequest, TokenResponse
-from app.services.auth_service import hash_password, verify_password, create_access_token
+from app.schemas.auth_schemas import RegisterRequest, TokenResponse, UserProfileUpdate, UserProfileResponse
+from app.services.auth_service import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,7 +33,14 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     # Generate token
     access_token = create_access_token(data={"sub": new_user.email})
 
-    return {"access_token": access_token, "token_type": "bearer", "user_id": new_user.id, "email": new_user.email}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": new_user.id,
+        "email": new_user.email,
+        "username": new_user.username,
+        "full_name": new_user.full_name
+    }
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -49,4 +56,39 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     access_token = create_access_token(data={"sub": user.email})
 
-    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id, "email": user.email}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "full_name": user.full_name
+    }
+
+
+@router.get("/me", response_model=UserProfileResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    """Return current user profile."""
+    return current_user
+
+
+@router.put("/me", response_model=UserProfileResponse)
+def update_me(
+    request: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update current user profile."""
+    if request.full_name is not None:
+        current_user.full_name = request.full_name
+    if request.username is not None:
+        # Optional: check for username uniqueness if changed
+        if request.username != current_user.username:
+            existing = db.query(User).filter(User.username == request.username).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Username already taken")
+        current_user.username = request.username
+    
+    db.commit()
+    db.refresh(current_user)
+    return current_user

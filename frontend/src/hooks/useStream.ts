@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { streamQuery, QueryStatus, QueryEvent } from '../api/query';
-import { DebugResult } from '../types';
+import { Message } from '../types';
 
 /**
  * useStream Hook
@@ -8,14 +8,6 @@ import { DebugResult } from '../types';
  * Manages the AI Debugger query state and streaming accumulation.
  */
 
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  status?: QueryStatus;
-  timestamp: string;
-  result?: DebugResult;
-}
 
 export const useStream = () => {
   const [messages, setMessages] = useState<Message[]>([]);

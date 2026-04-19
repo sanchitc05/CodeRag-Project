@@ -21,6 +21,7 @@ interface AuthState {
   // Modern Stitch-style helpers (bridged to current schema)
   setAuth: (user: User) => void;
   clearAuth: () => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -37,6 +38,9 @@ export const useAuthStore = create<AuthState>()(
       // Modern actions (adopted from Stitch logic)
       setAuth: (user) => set({ user, accessToken: user.access_token, isAuthenticated: true }),
       clearAuth: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+      updateUser: (updates) => set((state) => ({
+        user: state.user ? { ...state.user, ...updates } : null
+      })),
     }),
     {
       name: 'coderag-auth-v2', // New storage key for the premium upgrade

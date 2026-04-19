@@ -16,9 +16,12 @@ import { useConfigStore } from '../../store/configStore';
  */
 
 const UserProfileDropdown: React.FC = () => {
-  const { logout } = useAuthStore();
-  const { setProfileOpen, userProfile, setSettingsTab } = useConfigStore();
+  const { user, logout } = useAuthStore();
+  const { setProfileOpen, setSettingsTab } = useConfigStore();
   const navigate = useNavigate();
+
+  const fullName = user?.full_name || 'User';
+  const username = user?.username || user?.email?.split('@')[0] || 'user';
 
   const handleLogout = () => {
     logout();
@@ -38,11 +41,11 @@ const UserProfileDropdown: React.FC = () => {
       <div className="px-3 py-4 border-b border-border mb-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-accent text-background flex items-center justify-center shadow-lg font-black text-sm">
-            {userProfile.fullName.charAt(0)}
+            {fullName.charAt(0)}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-text-primary truncate">{userProfile.fullName}</p>
-            <p className="text-[10px] text-text-muted truncate uppercase tracking-widest">@{userProfile.username}</p>
+            <p className="text-sm font-bold text-text-primary truncate">{fullName}</p>
+            <p className="text-[10px] text-text-muted truncate uppercase tracking-widest">@{username}</p>
           </div>
         </div>
       </div>
@@ -55,27 +58,6 @@ const UserProfileDropdown: React.FC = () => {
         >
           <User size={14} className="group-hover:text-accent transition-colors" />
           <span>My Profile</span>
-        </button>
-        <button
-          onClick={() => navToSettings('account')}
-          className="w-full flex items-center gap-3 px-3 py-2 text-xs text-text-secondary hover:text-text-primary hover:bg-surface rounded-xl transition-all group"
-        >
-          <Settings size={14} className="group-hover:text-accent transition-colors" />
-          <span>Account Settings</span>
-        </button>
-        <button
-          onClick={() => navToSettings('appearance')}
-          className="w-full flex items-center gap-3 px-3 py-2 text-xs text-text-secondary hover:text-text-primary hover:bg-surface rounded-xl transition-all group"
-        >
-          <CreditCard size={14} className="group-hover:text-accent transition-colors" />
-          <span>Billing & Account</span>
-        </button>
-        <button
-          onClick={() => navToSettings('security')}
-          className="w-full flex items-center gap-3 px-3 py-2 text-xs text-text-secondary hover:text-text-primary hover:bg-surface rounded-xl transition-all group"
-        >
-          <Shield size={14} className="group-hover:text-accent transition-colors" />
-          <span>Security</span>
         </button>
       </div>
 

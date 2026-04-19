@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useStream } from '../../hooks/useStream';
@@ -33,10 +33,30 @@ const ChatWindow: React.FC = () => {
     fetchRepos();
   }, []);
 
-  // Handle session loading from History
+  const location = useLocation();
+
+  // Handle session loading from History (state or URL param)
   useEffect(() => {
+    const sessionFromState = location.state?.session;
     const sessionId = searchParams.get('session');
-    if (sessionId) {
+
+    if (sessionFromState) {
+      setMessages([
+        {
+          id: `user-${sessionFromState.id}`,
+          role: 'user',
+          content: sessionFromState.query,
+          timestamp: sessionFromState.created_at,
+        },
+        {
+          id: `assistant-${sessionFromState.id}`,
+          role: 'assistant',
+          content: `Showing analysis for: "${sessionFromState.query}"`,
+          result: sessionFromState.response,
+          timestamp: sessionFromState.created_at,
+        }
+      ]);
+    } else if (sessionId) {
       const loadSession = async () => {
         try {
           const session = await getSession(parseInt(sessionId));
@@ -51,7 +71,8 @@ const ChatWindow: React.FC = () => {
               {
                 id: `assistant-${session.id}`,
                 role: 'assistant',
-                content: session.response,
+                content: `Showing analysis for: "${session.query}"`,
+                result: session.response,
                 timestamp: session.created_at,
               }
             ]);
@@ -62,7 +83,7 @@ const ChatWindow: React.FC = () => {
       };
       loadSession();
     }
-  }, [searchParams, setMessages]);
+  }, [location.state, searchParams, setMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

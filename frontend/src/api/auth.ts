@@ -28,3 +28,19 @@ export async function login(
   });
   return response.data;
 }
+
+export async function updateProfile(data: {
+  fullName?: string;
+  username?: string;
+}): Promise<any> {
+  const response = await client.put('/auth/me', {
+    full_name: data.fullName,
+    username: data.username,
+  });
+  return response.data;
+}
+
+export async function getMe(): Promise<any> {
+  const response = await client.get('/auth/me');
+  return response.data;
+}
