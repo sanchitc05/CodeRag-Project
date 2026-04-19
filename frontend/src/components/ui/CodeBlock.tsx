@@ -3,7 +3,7 @@ import { Highlight, themes } from 'prism-react-renderer';
 import { Copy, Check, Terminal } from 'lucide-react';
 
 /**
- * CodeBlock: Premium Code Visualization
+ * CodeBlock: Code Visualization
  */
 
 interface CodeBlockProps {

@@ -1,0 +1,38 @@
+/* Custom styles for the Chat component */
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .evidence-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.evidence-grid > div {
+  height: fit-content;
+}
+
+/* Ensure code blocks don't overflow their containers */
+.code-block-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Smooth scroll for the chat window */
+.chat-scroll-container {
+  scroll-behavior: smooth;
+  scroll-padding-bottom: 2rem;
+}
+
+/* Indicator for new messages */
+.new-message-indicator {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}

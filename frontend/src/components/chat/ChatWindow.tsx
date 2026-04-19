@@ -1,23 +1,23 @@
-import React, { useRef, useEffect } from 'react';
-import { MessageBubble } from './MessageBubble';
-import { ChatInput } from './ChatInput';
-import { useStream } from '../../hooks/useStream';
-import { Terminal, Cpu, Zap, ShieldCheck } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-
+import MessageBubble from './MessageBubble';
+import ChatInput from './ChatInput';
+import { useStream } from '../../hooks/useStream';
 import { getAvailableRepos } from '../../api/query';
 import { getSession } from '../../api/history';
+import { Sparkles, Terminal, Book, Code2, Cpu } from 'lucide-react';
 
 /**
- * AI Debugger Workspace: ChatWindow
+ * Enhanced AI Debugger Workspace: ChatWindow
+ * Replaced brittle components with premium UI blocks.
  */
 
-export const ChatWindow: React.FC = () => {
+const ChatWindow: React.FC = () => {
   const { messages, isStreaming, sendMessage, setMessages } = useStream();
   const [searchParams] = useSearchParams();
-  const [availableRepos, setAvailableRepos] = React.useState<string[]>([]);
-  const [selectedRepo, setSelectedRepo] = React.useState('');
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [availableRepos, setAvailableRepos] = useState<string[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load available repositories for context selection
   useEffect(() => {
@@ -51,10 +51,8 @@ export const ChatWindow: React.FC = () => {
               {
                 id: `assistant-${session.id}`,
                 role: 'assistant',
-                content: '',
-                status: 'complete',
+                content: session.response,
                 timestamp: session.created_at,
-                result: session.response,
               }
             ]);
           }
@@ -66,83 +64,91 @@ export const ChatWindow: React.FC = () => {
     }
   }, [searchParams, setMessages]);
 
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  }, [messages]);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  const suggestions = [
-    { icon: Terminal, title: "Debug Panic", text: "Explain why the backend is throwing a 401 on /api/query" },
-    { icon: Cpu, title: "Analyze Flow", text: "How does the SSE streaming bridge data to the UI?" },
-    { icon: Zap, title: "Refactor Store", text: "Propose a more efficient way to handle auth state in Zustand" },
-    { icon: ShieldCheck, title: "Security Audit", text: "Are there any vulnerabilities in the token handling logic?" },
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isStreaming]);
+
+  const suggests = [
+    { icon: <Terminal size={14} />, text: "Analyze the database schema" },
+    { icon: <Code2 size={14} />, text: "Refactor the authentication flow" },
+    { icon: <Cpu size={14} />, text: "Optimize backend query performance" },
+    { icon: <Book size={14} />, text: "Explain the current project structure" },
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] relative">
-      {/* Message Area */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar scroll-smooth"
-      >
+    <div className="flex flex-col h-full relative overflow-hidden bg-background">
+      {/* Messages Window */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8 pt-8 pb-32">
         <div className="max-w-4xl mx-auto w-full">
           {messages.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 animate-pulse">
-                <Terminal className="text-accent" size={32} />
+            <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+              <div className="relative mb-8">
+                <div className="absolute -inset-4 bg-accent/20 blur-2xl rounded-full animate-pulse" />
+                <div className="relative w-20 h-20 bg-accent rounded-3xl flex items-center justify-center shadow-2xl shadow-accent/20 border border-accent/30 rotate-3">
+                  <Sparkles size={40} className="text-background animate-pulse" strokeWidth={2.5} />
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-text-primary mb-2">Code Analysis Ready</h2>
-              <p className="text-text-secondary text-center max-w-md mb-12 font-medium">
-                Connected to secure analysis engine. Zero-trust workload identity active.
+              
+              <h2 className="text-3xl font-black text-text-primary tracking-tight mb-3">
+                Hello, <span className="text-accent">Engineer</span>
+              </h2>
+              <p className="text-text-muted max-w-lg mb-12 font-medium leading-relaxed">
+                Connect your repository knowledge and let's build something exceptional. I can help with architecture, debugging, or deep code analysis.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                {suggests.map((s, idx) => (
+                  <button 
+                    key={idx}
                     onClick={() => sendMessage(s.text, selectedRepo)}
                     disabled={!selectedRepo}
-                    className="p-4 rounded-xl border border-border bg-surface-elevated/50 hover:bg-surface-elevated hover:border-accent/30 transition-all text-left group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 p-4 bg-surface-elevated/50 border border-border rounded-2xl text-left hover:border-accent/40 hover:bg-accent/5 transition-all group shadow-sm disabled:opacity-50"
                   >
-                    <div className="flex items-center gap-2 mb-2 text-accent">
-                      <s.icon size={16} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">{s.title}</span>
+                    <div className="p-2 bg-background border border-border rounded-lg text-text-muted group-hover:text-accent group-hover:border-accent/20 transition-colors">
+                      {s.icon}
                     </div>
-                    <p className="text-xs text-text-secondary group-hover:text-text-primary transition-colors">
+                    <span className="text-xs font-bold text-text-secondary group-hover:text-text-primary">
                       {s.text}
-                    </p>
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {messages.map((msg, idx) => (
-                <MessageBubble 
-                  key={msg.id} 
-                  message={msg} 
-                  isLast={idx === messages.length - 1} 
-                />
+            <div className="flex flex-col">
+              {messages.map((m) => (
+                <MessageBubble key={m.id} message={m} />
               ))}
+              {isStreaming && (
+                <div className="flex justify-start gap-4 mb-8 animate-pulse">
+                  <div className="w-9 h-9 rounded-2xl bg-surface-elevated border border-border" />
+                  <div className="flex flex-col gap-2">
+                    <div className="h-4 w-32 bg-surface-elevated rounded-lg" />
+                    <div className="h-20 w-full bg-surface-elevated rounded-2xl" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 md:p-8 bg-gradient-to-t from-background via-background/90 to-transparent">
-        <ChatInput 
-          onSend={(query, repo) => sendMessage(query, repo)} 
-          isLoading={isStreaming} 
-          availableRepos={availableRepos}
-          selectedRepo={selectedRepo}
-          onRepoChange={setSelectedRepo}
-        />
+      {/* Input Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none">
+        <div className="max-w-4xl mx-auto w-full pointer-events-auto">
+          <ChatInput 
+            onSend={(query, repo) => sendMessage(query, repo)} 
+            isLoading={isStreaming}
+            availableRepos={availableRepos}
+            selectedRepo={selectedRepo}
+            onRepoChange={setSelectedRepo}
+          />
+        </div>
       </div>
     </div>
   );

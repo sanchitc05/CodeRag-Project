@@ -7,7 +7,7 @@ import { ConfidenceBadge } from '../components/ui/ConfidenceBadge';
 import { HistoryItem } from '../types';
 
 /**
- * DashboardPage: Premium Session Analytics
+ * DashboardPage: Session History
  */
 
 export const DashboardPage: React.FC = () => {
@@ -42,20 +42,20 @@ export const DashboardPage: React.FC = () => {
         <div>
           <h2 className="text-3xl font-black text-text-primary tracking-tight mb-2">Analysis History</h2>
           <p className="text-text-muted text-sm max-w-lg leading-relaxed">
-            Review your previous debugging sessions, architectural audits, and AI-powered codebase explorations.
+            Review your previous code analysis sessions and explorations.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-4 bg-surface border border-border p-1 rounded-2xl shadow-lg">
-           <div className="flex flex-col px-4 py-2 border-r border-border">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Total Sessions</span>
-              <span className="text-xl font-black text-accent">{historyData?.total || 0}</span>
-           </div>
-           <div className="px-4 py-2 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                 <Activity size={16} />
-              </div>
-           </div>
+          <div className="flex flex-col px-4 py-2 border-r border-border">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Total Sessions</span>
+            <span className="text-xl font-black text-accent">{historyData?.total || 0}</span>
+          </div>
+          <div className="px-4 py-2 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+              <Activity size={16} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -82,11 +82,11 @@ export const DashboardPage: React.FC = () => {
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-surface/30 border border-dashed border-border rounded-[40px]">
-           <div className="w-16 h-16 rounded-3xl bg-surface-elevated flex items-center justify-center text-text-muted mb-4 border border-border">
-              <History size={32} />
-           </div>
-           <h3 className="text-lg font-bold text-text-primary mb-2">No history matches your search</h3>
-           <p className="text-text-muted text-sm">Try using different keywords or start a new debugging session.</p>
+          <div className="w-16 h-16 rounded-3xl bg-surface-elevated flex items-center justify-center text-text-muted mb-4 border border-border">
+            <History size={32} />
+          </div>
+          <h3 className="text-lg font-bold text-text-primary mb-2">No history matches your search</h3>
+          <p className="text-text-muted text-sm">Try using different keywords or start a new debugging session.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -113,8 +113,8 @@ export const DashboardPage: React.FC = () => {
             Previous
           </button>
           <div className="flex items-center gap-2">
-             <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-background font-bold text-xs">{page}</span>
-             <span className="text-text-muted text-xs font-medium">of {Math.ceil(historyData.total / 10)}</span>
+            <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-background font-bold text-xs">{page}</span>
+            <span className="text-text-muted text-xs font-medium">of {Math.ceil(historyData.total / 10)}</span>
           </div>
           <button
             onClick={() =>
@@ -152,52 +152,52 @@ function HistoryCard({
       className="group relative flex flex-col bg-surface border border-border rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-accent/30 hover:-translate-y-1 cursor-pointer overflow-hidden"
     >
       <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-         <div className="p-2 bg-accent/20 rounded-xl text-accent">
-            <ArrowRight size={16} />
-         </div>
+        <div className="p-2 bg-accent/20 rounded-xl text-accent">
+          <ArrowRight size={16} />
+        </div>
       </div>
 
       <div className="space-y-4 flex-1">
         <div className="flex items-center gap-2 mb-2">
-           <div className="p-1.5 bg-accent/10 rounded-lg text-accent">
-              <Database size={12} />
-           </div>
-           <span className="text-[10px] font-bold text-text-muted uppercase tracking-tighter">Code Context Active</span>
+          <div className="p-1.5 bg-accent/10 rounded-lg text-accent">
+            <Database size={12} />
+          </div>
+          <span className="text-[10px] font-bold text-text-muted uppercase tracking-tighter">Code Context Active</span>
         </div>
 
         <h3 className="text-sm font-bold text-text-primary line-clamp-2 leading-snug group-hover:text-accent transition-colors">
           {item.query}
         </h3>
-        
+
         <div className="p-3 rounded-2xl bg-surface-elevated/50 border border-border">
-           <p className="text-xs text-text-secondary italic line-clamp-2 leading-relaxed">
-             {item.response?.root_cause || 'Analysis incomplete...'}
-           </p>
+          <p className="text-xs text-text-secondary italic line-clamp-2 leading-relaxed">
+            {item.response?.root_cause || 'Analysis incomplete...'}
+          </p>
         </div>
 
         <div className="pt-2 flex items-center justify-between">
-           <ConfidenceBadge confidence={item.response?.confidence || 0} />
-           <div className="flex items-center gap-1.5 text-text-muted">
-              <Calendar size={12} />
-              <span className="text-[10px] font-medium">{new Date(item.created_at).toLocaleDateString()}</span>
-           </div>
+          <ConfidenceBadge confidence={item.response?.confidence || 0} />
+          <div className="flex items-center gap-1.5 text-text-muted">
+            <Calendar size={12} />
+            <span className="text-[10px] font-medium">{new Date(item.created_at).toLocaleDateString()}</span>
+          </div>
         </div>
       </div>
 
       <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
-         <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            disabled={isDeleting}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-danger/5 text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
-          >
-            <Trash2 size={12} />
-            Archive
-          </button>
-          
-          <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          disabled={isDeleting}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-danger/5 text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+        >
+          <Trash2 size={12} />
+          Archive
+        </button>
+
+        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
       </div>
     </div>
   );

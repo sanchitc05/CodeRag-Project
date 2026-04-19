@@ -1,19 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import CommandPalette from './CommandPalette';
+import { useConfigStore } from '../../store/configStore';
 
 /**
- * CodeRAG Premium AppLayout
+ * CodeRAG AppLayout
  */
 
 const AppLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme, setSearchOpen, setNotificationsOpen, setProfileOpen } = useConfigStore();
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setNotificationsOpen(false);
+        setProfileOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setSearchOpen, setNotificationsOpen, setProfileOpen]);
+
+  // Sync theme state with HTML root element
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+  }, [theme]);
+
   return (
-    <div className="flex h-screen bg-background text-text-primary overflow-hidden font-sans selection:bg-accent/30 selection:text-accent">
+    <div className="flex h-screen bg-background text-text-primary overflow-hidden font-sans">
+      <CommandPalette />
       {/* Sidebar - Desktop & Tablet */}
       <Sidebar 
         isOpen={isMobileMenuOpen} 

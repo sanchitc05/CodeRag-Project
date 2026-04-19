@@ -1,325 +1,324 @@
-```markdown
-<div align="center">
+# 🚀 CodeRAG – AI-Powered Repository Chat Assistant
 
-<img src="https://img.shields.io/badge/CodeRAG-AI%20Powered-blueviolet?style=for-the-badge&logo=openai&logoColor=white" alt="CodeRAG" />
+CodeRAG is an advanced **Retrieval-Augmented Generation (RAG)** based system that helps developers understand, search, and interact with large codebases using natural language.
 
-# CodeRAG
+Instead of manually exploring files and functions, users can simply ask questions like:
 
-### Debug Smarter. Understand Faster. Build Better.
+- *Where is user authentication implemented?*
+- *Explain the login flow.*
+- *Which files are responsible for vector search?*
+- *How does the API routing work?*
 
-**An AI-powered repository intelligence platform that transforms any GitHub codebase into a searchable, queryable knowledge base — powered by RAG, LangGraph, and Gemini.**
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev)
-[![Python](https://img.shields.io/badge/Python_3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
-[![Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?style=flat-square&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-
-</div>
+CodeRAG intelligently indexes your repository, retrieves relevant code chunks, and uses LLMs to generate accurate answers with context.
 
 ---
 
-## The Problem
+# 🌟 Features
 
-Large codebases are black boxes. You join a new team, inherit a legacy project, or debug a production issue — and you're lost in hundreds of files with no map.
+## 🔍 Smart Code Search
+Search across your entire repository using natural language queries.
 
-**CodeRAG changes that.** Point it at any GitHub repository, and it becomes a living, queryable intelligence layer. Ask it anything. Get precise, context-aware answers with source references — in real time.
+## 🧠 AI Code Understanding
+Get explanations of logic, functions, classes, architecture, and workflows.
 
----
+## ⚡ Real-Time Streaming Chat
+Fast token-by-token streaming responses for smooth conversations.
 
-## What You Can Do
+## 📂 Multi-Repository Support
+Upload or connect multiple repositories and query them separately.
 
-```
-"Explain this repository's architecture"
-"Which files handle authentication?"
-"Why is the payment module failing?"
-"What database ORM does this project use?"
-"Trace the request lifecycle from API to DB"
-```
+## 🔐 Authentication System
+Secure user signup, login, and protected sessions.
 
----
+## 📑 Citation-Based Answers
+Every AI response references exact source files and chunks.
 
-## Feature Overview
+## 🗃 Vector Database Support
+Uses semantic embeddings for accurate code retrieval.
 
-| Category | Features |
-|---|---|
-| **Repository Ingestion** | Clone & index any public GitHub repo, chunking + vector embedding pipeline |
-| **AI Debugger** | Natural language queries, root cause analysis, architecture explanation |
-| **Search** | Hybrid search: vector similarity (ChromaDB) + keyword (Elasticsearch) |
-| **Streaming** | Real-time token-by-token response streaming |
-| **Analytics** | Session history, query logs, confidence scoring reports |
-| **Auth** | JWT-based registration, login, protected routes |
-| **UI** | Premium dark dashboard, responsive, modern design |
+## 📊 Scalable Architecture
+Designed for enterprise-scale repositories.
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     GitHub Repository                    │
-└────────────────────────┬────────────────────────────────┘
-                         │ Ingestion
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│              Chunking + Embedding Pipeline               │
-│         (Sentence Transformers / LangChain)              │
-└───────────┬──────────────────────────┬──────────────────┘
-            │                          │
-            ▼                          ▼
-   ┌─────────────────┐       ┌──────────────────┐
-   │    ChromaDB     │       │  Elasticsearch   │
-   │ Vector Storage  │       │   Code Search    │
-   └────────┬────────┘       └────────┬─────────┘
-            │                         │
-            └───────────┬─────────────┘
-                        │ Hybrid Retrieval
-                        ▼
-          ┌─────────────────────────┐
-          │  FastAPI + LangGraph    │
-          │   Reasoning Workflow    │
-          └────────────┬────────────┘
-                       │
-                       ▼
-          ┌─────────────────────────┐
-          │     Google Gemini       │
-          │    LLM Reasoning        │
-          └────────────┬────────────┘
-                       │ Streaming Response
-                       ▼
-          ┌─────────────────────────┐
-          │    React Frontend       │
-          │   (Real-time Output)    │
-          └─────────────────────────┘
-```
+Built on a modern, scalable, and intelligent AI-powered technology stack.
+
+### 🌐 Frontend
+- **Framework:** React + TypeScript + Vite (Fast and modern UI development)
+- **State Management:** Zustand + React Query (Efficient state & API caching)
+- **Styling:** Tailwind CSS (Responsive and clean design system)
+- **User Experience:** Real-time streaming chat interface
+- **Build Tool:** Vite (Lightning-fast development environment)
+
+### ⚙️ Backend
+- **Framework:** FastAPI (High-performance async Python backend)
+- **Authentication:** JWT-based secure login system
+- **API Layer:** RESTful endpoints with scalable architecture
+- **Validation:** Pydantic models for strict type safety
+- **Server:** Uvicorn (ASGI production-ready server)
+
+### 🗄️ Databases & Search
+- **Relational Database:** MySQL 8.0 (Users, sessions, metadata)
+- **Vector Database:** ChromaDB (Semantic embedding search)
+- **Search Engine:** Elasticsearch (Keyword + hybrid retrieval)
+
+### 🤖 AI & Retrieval Layer
+- **LLM Provider:** Google Gemini API
+- **Embedding Engine:** Sentence Transformers
+- **Framework:** LangChain (RAG orchestration pipeline)
+- **Retrieval Method:** Hybrid Search (Semantic + Keyword matching)
+- **Output:** Context-aware answers with source citations
+
+### 🐳 DevOps & Deployment
+- **Containerization:** Docker Compose
+- **Version Control:** Git + GitHub
+- **Environment Management:** `.env` based configuration
+- **Scalability:** Multi-service modular architecture
 
 ---
 
-## Tech Stack
+## 🚀 Getting Started
 
-### Frontend
-- **React.js** + **TypeScript** — component-driven UI
-- **Tailwind CSS** — utility-first styling
-- **Zustand** — lightweight state management
-- **Vite** — fast dev server & bundler
-
-### Backend
-- **FastAPI** — high-performance async API
-- **LangGraph** — agentic reasoning workflows
-- **LangChain** — LLM orchestration layer
-- **Uvicorn** — ASGI server
-
-### Databases & Search
-- **MySQL** — user accounts, sessions, query history
-- **ChromaDB** — vector embeddings for semantic search
-- **Elasticsearch** — full-text code indexing & retrieval
-
-### AI / LLM
-- **Google Gemini API** — reasoning & response generation
-- **Sentence Transformers** — local embedding models
-
-### DevOps
-- **Docker Compose** — one-command infrastructure setup
-
----
-
-## Project Structure
-
-```
-CodeRAG/
-├── backend/
-│   ├── app/
-│   │   ├── api/           # Route handlers
-│   │   ├── core/          # Auth, config, security
-│   │   ├── models/        # DB models
-│   │   ├── services/      # Business logic
-│   │   │   ├── ingestion/ # Repo cloning & chunking
-│   │   │   ├── retrieval/ # ChromaDB + ES hybrid search
-│   │   │   └── reasoning/ # LangGraph + Gemini workflows
-│   │   └── main.py
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Dashboard, Debugger, Settings
-│   │   ├── store/         # Zustand state
-│   │   └── api/           # API client
-│   ├── package.json
-│   └── vite.config.ts
-│
-└── docker-compose.yml
-```
-
----
-
-## Getting Started
+Follow these steps to run a local instance of **CodeRAG** on your machine.
 
 ### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- Docker Desktop
+- Git
 
-Make sure the following are installed on your machine:
+### 1️⃣ Clone the Repository
 
-- [Python 3.11+](https://www.python.org/downloads/)
-- [Node.js 18+](https://nodejs.org/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Git](https://git-scm.com/)
+```bash
+git clone https://github.com/snehas-05/CodeRag-Project.git
+cd CodeRag-Project
+```
 
----
-
-### Step 1 — Start Infrastructure
-
-Spin up MySQL, ChromaDB, and Elasticsearch with a single command:
+### 2️⃣ Start Core Services
 
 ```bash
 docker compose up mysql chromadb elasticsearch
 ```
 
-| Service | Port |
-|---|---|
-| MySQL | `3307` |
-| ChromaDB | `8001` |
-| Elasticsearch | `9200` |
+This starts:
 
----
+MySQL Database → localhost:3306
 
-### Step 2 — Configure Environment
+ChromaDB Vector Store → localhost:8000
 
-Create a `.env` file inside the `backend/` directory:
+Elasticsearch → localhost:9200
 
-```env
-GEMINI_API_KEY=your_gemini_api_key
-SECRET_KEY=your_jwt_secret_key
-
-MYSQL_HOST=localhost
-MYSQL_PORT=3307
-MYSQL_USER=root
-MYSQL_PASSWORD=yourpassword
-MYSQL_DB=coderag
-```
-
-> Get your Gemini API key at [aistudio.google.com](https://aistudio.google.com)
-
----
-
-### Step 3 — Run the Backend
+### 3️⃣ Backend Setup
 
 ```bash
+# Open a new terminal
 cd backend
 
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv .venv
-.venv\Scripts\Activate.ps1        # Windows
-# source .venv/bin/activate        # macOS / Linux
+
+# Activate environment
+
+# Windows
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the server
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Configure environment
+cp .env.example .env
+
+# Edit .env and add:
+# GOOGLE_API_KEY
+# MYSQL credentials
+# JWT secret
+
+# Start backend server
+python main.py
+
+# Alternative command
+uvicorn app.main:app --reload
 ```
+Backend URL: http://localhost:8000
 
-- API: `http://localhost:8000`
-- Swagger Docs: `http://localhost:8000/docs`
+Swagger Docs: http://localhost:8000/docs
 
----
-
-### Step 4 — Run the Frontend
+### 4️⃣ Frontend Setup
 
 ```bash
+# Open another terminal
 cd frontend
+
+# Install dependencies
 npm install
+
+# Start frontend server
 npm run dev
 ```
+Frontend URL: http://localhost:5173
 
-- App: `http://localhost:5173`
-
----
-
-## Usage Guide
-
-### 1. Register & Login
-Create an account and sign in to access your personal workspace.
-
-### 2. Ingest a Repository
-Navigate to **Settings → Repository Command Center**.
-
-```
-Repository URL:      https://github.com/username/repo-name
-Context Identifier:  my-project
-```
-
-Click **Initialize Synchronization** and wait for indexing to complete.
-
-### 3. Query the Debugger
-Go to the **AI Debugger** workspace and start asking:
-
-```
-> Explain the overall architecture of this repository
-> Which files are responsible for user authentication?
-> Why might the payment service be throwing a 500 error?
-> What is the data flow from the API layer to the database?
-```
-
-Each response includes:
-- **Confidence score** — how well the retrieved context matched your query
-- **Source references** — which files informed the answer
-- **Streaming output** — real-time token-by-token generation
+### 5️⃣ Ready to Use
+Open your browser and start chatting with repositories using CodeRAG 🚀
 
 ---
 
-## Security
+## 🔑 Environment Variables
 
-| Feature | Implementation |
-|---|---|
-| Authentication | JWT (JSON Web Tokens) |
-| Route Protection | Token-based middleware |
-| Session Handling | Secure persistent sessions |
-| API Security | Protected endpoints, CORS configuration |
+Create a `.env` file inside the **backend/** directory and configure the following values:
+
+```env
+# Google Gemini API Key
+GOOGLE_API_KEY=your_google_api_key
+
+# JWT Authentication
+JWT_SECRET_KEY=your_super_secret_key
+
+# MySQL Configuration
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=coderag
+
+# ChromaDB Configuration
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+
+# Elasticsearch Configuration
+ELASTICSEARCH_HOST=localhost
+ELASTICSEARCH_PORT=9200
+```
+📌 Notes
+Replace all placeholder values with your actual credentials.
+
+Keep your .env file private and never push it to GitHub.
+
+Make sure Docker services are running before starting the backend.
+
+Restart the backend server after changing environment variables.
 
 ---
 
-## Roadmap
+## 🤖 AI Model Used
 
-- [ ] Multi-repository support (query across multiple codebases)
-- [ ] GitHub OAuth login
-- [ ] Team collaboration & shared workspaces
-- [ ] PDF export for debug reports
-- [ ] Private repository support via GitHub token
-- [ ] AWS / GCP deployment guide
-- [ ] Fine-tuned local model support (Ollama / LLaMA)
+CodeRAG uses **Google Gemini API** for intelligent response generation.
+
+### ✨ Capabilities
+- Context-aware repository conversations
+- Accurate code explanations
+- Natural language Q&A over codebases
+- Smart summarization of files and folders
+- Fast streaming responses
 
 ---
 
-## Contributing
+## 💬 Example Queries
+
+Try asking questions like:
+
+- Explain the authentication flow
+- Which file handles login?
+- Summarize this repository
+- Show all backend API routes
+- Explain vector search logic
+- Where is JWT implemented?
+- Which files use MySQL?
+- How does the chat pipeline work?
+
+---
+
+## 🔒 Security Features
+
+Built with modern security best practices.
+
+- JWT Authentication
+- Password Hashing
+- Protected API Routes
+- Secure Session Handling
+- Request Validation
+- CORS Protection
+- Environment Variable Secrets
+
+---
+
+## 🚀 Future Improvements
+
+Planned upgrades for upcoming versions:
+
+- GitHub Repository Auto Import
+- Multi-Repository Workspace
+- Pull Request Review Assistant
+- AI Bug Detection
+- Codebase Visualization Graph
+- Team Collaboration Features
+- Voice Commands
+- Deployment Dashboard
+
+---
+
+## 🤝 Contributing
 
 Contributions are welcome and appreciated.
 
 ```bash
-# Fork → Clone → Branch → Improve → PR
-git checkout -b feature/your-feature-name
-git commit -m "feat: add your feature"
-git push origin feature/your-feature-name
-```
+# Fork the repository
+# Create your feature branch
+git checkout -b feature/amazing-feature
 
-Please open an issue first for major changes.
+# Commit your changes
+git commit -m "Add amazing feature"
+
+# Push to branch
+git push origin feature/amazing-feature
+
+# Open a Pull Request
+```
+Contribution Guidelines:
+Follow clean code practices
+
+Write meaningful commit messages
+
+Test before submitting PRs
+
+Keep pull requests focused
 
 ---
 
-## Author
+👩‍💻 Author
 
-**Sneha Singhania**
-B.Tech CSE · AI Builder · Full Stack Developer
+Sneha Singhania
+B.Tech CSE | AI Developer | Full Stack Enthusiast
+
+GitHub: https://github.com/snehas-05
 
 ---
 
-<div align="center">
+⭐ Support
 
-If CodeRAG helped you, consider giving it a ⭐ on GitHub — it helps more developers discover the project.
+If you found this project useful:
 
-**CodeRAG — where every repository becomes an answered question.**
+Give it a Star ⭐ on GitHub
+Share it with developers
+Contribute new features
 
-</div>
-```
+---
+
+💡 Why CodeRAG?
+
+Modern repositories are large and complex.
+
+Reading files manually takes time.
+
+CodeRAG transforms codebases into conversations.
+
+Ask questions.
+Get accurate answers.
+Understand faster.
+Build smarter.
 
 ---

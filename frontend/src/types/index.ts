@@ -1,7 +1,7 @@
 import { QueryStatus } from '../api/query';
 
 /**
- * CodeRAG Premium Frontend Types
+ * CodeRAG Frontend Types
  */
 
 export interface User {
@@ -33,6 +33,7 @@ export interface DebugResult {
   iterations: number;
   hypothesis_chain: string[];
   session_id: number;
+  intent: string;
 }
 
 export interface StreamEvent {

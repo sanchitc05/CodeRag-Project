@@ -28,7 +28,8 @@ _STOPWORDS: set[str] = {
 }
 
 # Maximum characters per code chunk in prompts — prevents token overflow
-_MAX_CHUNK_CHARS = 800
+# Gemini 1.5 Pro can handle much more, but we keep it reasonable for cost/speed.
+_MAX_CHUNK_CHARS = 1500
 
 
 def _truncate(text: str, max_chars: int = _MAX_CHUNK_CHARS) -> str:
@@ -79,78 +80,74 @@ def retrieve_node(state: AgentState) -> dict:
 # ─────────────────────────────────────────────────────────────────────
 
 def analyze_node(state: AgentState) -> dict:
-    """Generate a debugging hypothesis using Gemma 3."""
+    """Generate a debugging hypothesis or architectural overview using Gemini."""
     query = state["query"]
     ctx = state.get("retrieval_context") or {}
+    intent = ctx.get("intent", "CODE_LEVEL")
     code_chunks = ctx.get("code_chunks", [])
     history = list(state.get("hypothesis_history", []))
 
-    # Format the top 3 code chunks for the prompt with metadata
+    # Format code chunks for the prompt
     code_block_parts: list[str] = []
-    for i, chunk in enumerate(code_chunks[:3], start=1):
+    # For Gemini Pro, we can include more chunks (up to 5)
+    for i, chunk in enumerate(code_chunks[:5], start=1):
         code_block_parts.append(_format_chunk_for_prompt(chunk, i))
 
     has_code = bool(code_block_parts)
     code_block = "\n\n".join(code_block_parts) if has_code else None
-
-    # Include previous hypotheses so the model can refine them
     history_str = "\n".join(f"- {h}" for h in history[-2:]) if history else None
 
-    if has_code:
+    # Base System Prompt
+    system_role = (
+        "You are an Elite Software Architect and Debugging Assistant. "
+        "Your goal is to provide deep, accurate insights into the provided codebase.\n\n"
+    )
+
+    if intent == "REPO_LEVEL":
         prompt = (
-            "You are an expert software engineering assistant. Your goal is to determine if the "
-            "developer's question is about a specific bug in this codebase OR if it is a general question.\n\n"
-            f"Developer question: {query}\n\n"
-            f"Retrieved code chunks from the repository:\n{code_block}\n\n"
+            f"{system_role}"
+            f"USER QUERY: {query}\n\n"
+            "CONTEXT (Top-level files and project structure):\n"
+            f"{code_block if has_code else 'No specific files retrieved.'}\n\n"
             "INSTRUCTIONS:\n"
-            "1. If the retrieved code chunks ARE NOT relevant to the question, ignore them and answer the question "
-            "directly using your general software knowledge.\n"
-            "2. If the question is about a bug/issue and the code SEEMS relevant, generate a concise hypothesis "
-            "about the root cause in the codebase.\n"
-            "3. If previous hypotheses exist, refine or confirm them based on new evidence.\n\n"
+            "Analyze the project structure and provided files. Explain how the project is organized "
+            "and what the primary components do in relation to the user's query. Be architectural and concise."
         )
-        if history_str:
-            prompt += f"Previous hypotheses:\n{history_str}\n\n"
-        prompt += (
-            "Write a specific hypothesis (or a general answer if the question is generic). "
-            "Be direct and technical. Do not repeat the question."
-        )
-    else:
-        # No code retrieved — answer the question directly with general knowledge
+    elif intent == "LOG_LEVEL":
+        log_block = "\n".join([f"LOG: {l.get('message', '')}" for l in ctx.get("log_results", [])[:5]])
         prompt = (
-            "You are a helpful software engineering assistant. "
-            f"Answer the following question clearly and concisely using your general knowledge:\n\n{query}"
+            f"{system_role}"
+            f"USER QUERY: {query}\n\n"
+            f"LOG ERRORS DETECTED:\n{log_block}\n\n"
+            "CHOSEN CODE CONTEXT:\n"
+            f"{code_block if has_code else 'No relevant code found.'}\n\n"
+            "INSTRUCTIONS:\n"
+            "Correlate the log errors with the code context. Identify the specific failure point or "
+            "provide a hypothesis on why these logs are occurring."
+        )
+    else:  # CODE_LEVEL
+        prompt = (
+            f"{system_role}"
+            f"USER QUERY: {query}\n\n"
+            f"RELEVANT CODE CHUNKS:\n{code_block}\n\n"
+            "INSTRUCTIONS:\n"
+            "1. Analyze the code blocks to answer the technical question or find the bug root cause.\n"
+            "2. Be extremely specific about variable names, logic flow, and edge cases.\n"
+            "3. If previous hypotheses exist, refine them based on this code evidence."
         )
 
+    if history_str:
+        prompt += f"\n\nPREVIOUS ANALYSIS:\n{history_str}"
+
     try:
-        hypothesis = model_manager.generate(prompt, max_new_tokens=256)
+        hypothesis = model_manager.generate(prompt, max_new_tokens=512)
     except Exception as e:
         logger.error(f"[ANALYZE] Generation failed: {e}")
         hypothesis = f"Analysis failed: {e}"
 
     hypothesis = hypothesis.strip()
-
-    # Fallback if model returned nothing useful
-    if not hypothesis or len(hypothesis) < 10:
-        if code_chunks:
-            top = code_chunks[0]
-            hypothesis = (
-                f"The issue may be in '{top.get('name', 'unknown function')}' "
-                f"at {top.get('file_path', 'unknown file')} "
-                f"(line {top.get('start_line', '?')})."
-            )
-        else:
-            hypothesis = (
-                "No relevant code was found for this query. "
-                "Ensure the repository has been ingested and try a more specific question."
-            )
-
     history.append(hypothesis)
     new_iteration = state.get("iteration", 0) + 1
-
-    preview = hypothesis[:80] + "..." if len(hypothesis) > 80 else hypothesis
-    logger.info(f"[ANALYZE] Iteration {new_iteration} — hypothesis: {preview}")
-    print(f"[ANALYZE] Iteration {new_iteration} — hypothesis: {preview}")
 
     return {
         "hypothesis": hypothesis,
@@ -169,6 +166,7 @@ def verify_node(state: AgentState) -> dict:
     ctx = state.get("retrieval_context") or {}
     code_chunks = ctx.get("code_chunks", [])
     iteration = state.get("iteration", 1)
+    intent = ctx.get("intent", "CODE_LEVEL")
 
     # ── 1. Semantic similarity score (0.0 – 0.4) ────────────────────
     sim_scores = [c.get("score", 0.0) for c in code_chunks if c.get("score") is not None]
@@ -190,13 +188,30 @@ def verify_node(state: AgentState) -> dict:
     keyword_score = min(matches / max(total_keywords, 1), 1.0) * 0.25
 
     # ── 3. Evidence depth score (0.0 – 0.2) ─────────────────────────
-    unique_files = {c.get("file_path", "") for c in code_chunks if c.get("file_path")}
+    unique_files = {c.get("file_path", "").lower() for c in code_chunks if c.get("file_path")}
     depth_score = min(len(unique_files) / 3, 1.0) * 0.2
 
     # ── 4. Iteration bonus (0.0 – 0.15) ─────────────────────────────
     iteration_score = min(iteration / 3, 1.0) * 0.15
 
     confidence = round(similarity_score + keyword_score + depth_score + iteration_score, 4)
+
+    # ── 5. REPO_LEVEL BOOST (STRICT REQUIRMENT) ──────────────────────
+    if intent == "REPO_LEVEL":
+        # Check for README + Config/Package files
+        has_readme = any("readme.md" in f for f in unique_files)
+        config_files = ["package.json", "requirements.txt", "docker-compose.yml", "go.mod", "pom.xml"]
+        has_config = any(any(cfg in f for cfg in config_files) for f in unique_files)
+        
+        if has_readme and has_config:
+            # Boost to 0.85 - 0.95 range if both found
+            confidence = max(confidence, 0.85 + (iteration * 0.05))
+        elif has_readme or has_config:
+            # Boost to 0.70 - 0.75 range if either found
+            confidence = max(confidence, 0.70)
+        
+        # Cap confidence
+        confidence = min(confidence, 0.98)
 
     # ── Collect top-3 evidence chunks ────────────────────────────────
     evidence: list[dict] = []
@@ -211,16 +226,10 @@ def verify_node(state: AgentState) -> dict:
         })
 
     logger.info(
-        f"[VERIFY] Confidence: {confidence:.2f} "
+        f"[VERIFY] Intent: {intent}, Confidence: {confidence:.2f} "
         f"(sim={similarity_score:.2f}, kw={keyword_score:.2f}, "
         f"depth={depth_score:.2f}, iter={iteration_score:.2f})"
     )
-    print(
-        f"[VERIFY] Confidence: {confidence:.2f} "
-        f"(sim={similarity_score:.2f}, kw={keyword_score:.2f}, "
-        f"depth={depth_score:.2f}, iter={iteration_score:.2f})"
-    )
-
     return {
         "confidence": confidence,
         "evidence": evidence,
@@ -242,14 +251,19 @@ def decide_node(state: AgentState) -> dict:
 
 def should_continue(state: AgentState) -> str:
     """Returns 'respond' if confident enough or max iterations hit, else 'analyze'."""
-    CONFIDENCE_THRESHOLD = 0.5
+    CONFIDENCE_THRESHOLD = 0.55  # Slightly higher for Pro
     MAX_ITERATIONS = 2
 
     ctx = state.get("retrieval_context") or {}
+    intent = ctx.get("intent", "CODE_LEVEL")
     has_code = bool(ctx.get("code_chunks"))
     has_logs = bool(ctx.get("log_results"))
 
-    # If retrieval found nothing, go straight to respond (Gemma handles it gracefully)
+    # If it's a REPO_LEVEL query, one iteration is usually enough with Gemini Pro
+    if intent == "REPO_LEVEL":
+        return "respond"
+
+    # If retrieval found nothing, go straight to respond
     if not has_code and not has_logs:
         return "respond"
 
@@ -263,146 +277,88 @@ def should_continue(state: AgentState) -> str:
 # ─────────────────────────────────────────────────────────────────────
 
 def respond_node(state: AgentState) -> dict:
-    """Produce the final structured debugging report using Gemma 3."""
+    """Produce the final high-fidelity response using Gemini 1.5 Pro."""
     query = state["query"]
     hypothesis = state.get("hypothesis", "No hypothesis generated")
     evidence = state.get("evidence", [])
     confidence = state.get("confidence", 0.0)
     iteration = state.get("iteration", 0)
+    ctx = state.get("retrieval_context") or {}
+    intent = ctx.get("intent", "CODE_LEVEL")
 
-    # ── No evidence or very low confidence: answer with general knowledge ──
-    # If confidence is < 0.35, we treat it as a general question to avoid hallucinations.
-    low_confidence = confidence < 0.35
-    if not evidence or low_confidence:
-        prompt = (
-            "You are a helpful software engineering assistant. "
-            "Answer the following question as clearly and helpfully as possible. "
-            "If it is a general programming/software concept, explain it well. "
-        )
-        if low_confidence and evidence:
-            prompt += (
-                "The system found some code but it has low relevance to your question. "
-                "I will answer based on general best practices.\n\n"
-            )
-        else:
-            prompt += (
-                "If it seems like a codebase-specific debugging question, note that "
-                "no code was retrieved and suggest the user re-ingest their repository.\n\n"
-            )
-        
-        prompt += f"Question: {query}"
-        
-        try:
-            root_cause = model_manager.generate(prompt, max_new_tokens=500).strip()
-        except Exception as e:
-            root_cause = f"Could not generate answer: {e}"
-
-        final_response: dict[str, Any] = {
-            "root_cause": root_cause,
-            "suggested_fix": (
-                "Review the explanation above for guidance."
-                if low_confidence else 
-                "If this was a code-specific question: re-ingest the repository."
-            ),
-            "evidence": evidence if low_confidence else [],
-            "confidence": confidence,
-            "iterations": iteration,
-            "hypothesis_chain": list(state.get("hypothesis_history", [])),
-            "retrieval_warning": (
-                "Low confidence match — answered from general knowledge."
-                if low_confidence else "No code evidence was retrieved."
-            ),
-        }
-        return {
-            "root_cause": root_cause,
-            "suggested_fix": final_response["suggested_fix"],
-            "final_response": final_response,
-        }
-
-    # Build evidence summary for prompts
+    # Build evidence summary
     evidence_lines = []
     for e in evidence:
         fp = e.get("file_path", "unknown")
         name = e.get("name", "")
         sl = e.get("start_line", "?")
-        el = e.get("end_line", "?")
-        score = e.get("score", 0.0)
-        label = fp
-        if name:
-            label += f"::{name}"
-        label += f" (lines {sl}–{el}, relevance={score:.2f})"
-        evidence_lines.append(label)
-    evidence_summary = "\n".join(f"  - {l}" for l in evidence_lines)
+        label = f"{fp}" + (f" (at {name})" if name else "")
+        evidence_lines.append(f"- {label} [Line {sl}]")
+    evidence_summary = "\n".join(evidence_lines)
 
-    # Build code context from top evidence chunk
-    top_content = _truncate(evidence[0].get("content", ""), 600) if evidence else ""
-    top_file = evidence[0].get("file_path", "unknown") if evidence else "unknown"
-    top_name = evidence[0].get("name", "") if evidence else ""
-    fn_label = f"::{top_name}" if top_name else ""
+    # Top code context
+    top_content = ""
+    if evidence:
+        top_content = _truncate(evidence[0].get("content", ""), 2000)
 
-    # ── Single combined prompt for Gemma 3 ──────────────────────────
-    combined_prompt = (
-        "You are an expert software debugger. Based on the analysis and code evidence below, "
-        "provide a clear debugging report.\n\n"
-        f"Developer question: {query}\n\n"
-        f"Hypothesis: {hypothesis}\n\n"
-        f"Evidence files:\n{evidence_summary}\n\n"
-        f"Most relevant code from {top_file}{fn_label}:\n"
-        f"```\n{top_content}\n```\n\n"
-        "Respond in this exact format:\n\n"
-        "ROOT CAUSE:\n"
-        "<one clear sentence explaining the root cause>\n\n"
-        "SUGGESTED FIX:\n"
-        "<specific, actionable fix mentioning file name and what to change>\n\n"
-        "Be concise, technical, and grounded in the code evidence above."
-    )
+    # REPO_LEVEL uses a specific structure
+    if intent == "REPO_LEVEL":
+        prompt = (
+            "You are a Technical Lead providing a high-level overview of a repository.\n\n"
+            f"USER QUESTION: {query}\n"
+            "TECHNICAL CONTEXT:\n"
+            f"{hypothesis}\n\n"
+            "PROJECT SNIPPET:\n"
+            f"```\n{top_content}\n```\n\n"
+            "TASK:\n"
+            "Provide a concise, high-quality repository overview. Use the exact sections below.\n\n"
+            "FORMAT YOUR RESPONSE WITH THESE EXACT SECTIONS:\n"
+            "1. **PROJECT PURPOSE**\n"
+            "2. **CORE FEATURES**\n"
+            "3. **TECH STACK**\n"
+            "4. **ARCHITECTURE**\n"
+            "5. **KEY MODULES**\n"
+        )
+    else:
+        # Prompt Engineering for High Fidelity (CODE/LOG level)
+        prompt = (
+            "You are a Technical Lead providing a final solution to a developer.\n\n"
+            f"USER QUESTION: {query}\n"
+            f"QUERY INTENT: {intent}\n\n"
+            "TECHNICAL ANALYSIS:\n"
+            f"{hypothesis}\n\n"
+            "CODE EVIDENCE:\n"
+            f"{evidence_summary}\n\n"
+            "RELEVANT SNIPPET:\n"
+            f"```\n{top_content}\n```\n\n"
+            "TASK:\n"
+            "Provide a comprehensive yet concise answer. If it's a bug, explain precisely why it's "
+            "happening and give a specific fix. If it's a structural question, describe the architecture. "
+            "Be extremely technical and helpful.\n\n"
+            "FORMAT YOUR RESPONSE WITH SECTIONS:\n"
+            "1. **ROOT CAUSE / SUMMARY**\n"
+            "2. **TECHNICAL DETAILS**\n"
+            "3. **SUGGESTED NEXT STEPS / FIX**\n"
+        )
 
     try:
-        raw_response = model_manager.generate(combined_prompt, max_new_tokens=500).strip()
+        final_text = model_manager.generate(prompt, max_new_tokens=1000).strip()
     except Exception as e:
-        logger.error(f"[RESPOND] Generation failed: {e}")
-        raw_response = ""
+        final_text = f"Failed to generate final response: {e}"
 
-    # Parse ROOT CAUSE and SUGGESTED FIX sections from response
-    root_cause = ""
-    suggested_fix = ""
-
-    if "ROOT CAUSE:" in raw_response and "SUGGESTED FIX:" in raw_response:
-        try:
-            rc_part = raw_response.split("ROOT CAUSE:", 1)[1]
-            sf_part = rc_part.split("SUGGESTED FIX:", 1)
-            root_cause = sf_part[0].strip()
-            suggested_fix = sf_part[1].strip() if len(sf_part) > 1 else ""
-        except (IndexError, ValueError):
-            pass
-
-    # Fallbacks if parsing failed or model returned something unexpected
-    if not root_cause or len(root_cause) < 10:
-        root_cause = hypothesis or f"Issue likely originates in {top_file}{fn_label}."
-    if not suggested_fix or len(suggested_fix) < 10:
-        suggested_fix = f"Review {top_file}{fn_label} and address: {root_cause}"
-
-    # ── Assemble final response ──────────────────────────────────────
+    # Final response object for the frontend
     final_response = {
-        "root_cause": root_cause,
-        "suggested_fix": suggested_fix,
+        "root_cause": final_text,
+        "suggested_fix": "See technical details above.",
         "evidence": evidence,
         "confidence": confidence,
         "iterations": iteration,
-        "hypothesis_chain": list(state.get("hypothesis_history", [])),
+        "intent": intent,
+        "hypothesis_chain": state.get("hypothesis_history", []),
     }
 
-    logger.info(
-        f"[RESPOND] Final answer generated. "
-        f"Confidence: {confidence:.2f}, Iterations: {iteration}"
-    )
-    print(
-        f"[RESPOND] Final answer generated. "
-        f"Confidence: {confidence:.2f}, Iterations: {iteration}"
-    )
-
     return {
-        "root_cause": root_cause,
-        "suggested_fix": suggested_fix,
+        "root_cause": final_text,
+        "suggested_fix": "See technical details above.",
         "final_response": final_response,
     }

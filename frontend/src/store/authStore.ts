@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { User } from '../types';
 
 /**
- * CodeRAG Premium AuthStore
+ * CodeRAG AuthStore
  * 
  * Bridges the existing backend identity (user_id, email, access_token)
  * with the modern Stitch state management pattern.

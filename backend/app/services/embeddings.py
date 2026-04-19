@@ -59,17 +59,25 @@ def embed_and_store_chunks(chunks: list[dict], repo_id: str) -> int:
             ids.append(chunk["chunk_id"])
             embeddings.append(embedding)
             documents.append(content)
-            metadatas.append(
-                {
-                    "file_path": chunk.get("file_path", ""),
-                    "language": chunk.get("language", ""),
-                    "chunk_type": chunk.get("chunk_type", ""),
-                    "name": chunk.get("name", ""),
-                    "start_line": chunk.get("start_line", 0),
-                    "end_line": chunk.get("end_line", 0),
-                    "repo_id": repo_id,
-                }
-            )
+            
+            # Extract basic metadata
+            meta = {
+                "file_path": chunk.get("file_path", ""),
+                "language": chunk.get("language", ""),
+                "chunk_type": chunk.get("chunk_type", ""),
+                "name": chunk.get("name", ""),
+                "start_line": chunk.get("start_line", 0),
+                "end_line": chunk.get("end_line", 0),
+                "repo_id": repo_id,
+                "priority": float(chunk.get("priority", 0.5)),
+            }
+            # Flatten extra metadata if present
+            extra_meta = chunk.get("metadata") or {}
+            for k, v in extra_meta.items():
+                if isinstance(v, (str, int, float, bool)):
+                    meta[f"meta_{k}"] = v
+
+            metadatas.append(meta)
 
         if ids:
             try:
@@ -82,11 +90,45 @@ def embed_and_store_chunks(chunks: list[dict], repo_id: str) -> int:
                 stored_count += len(ids)
             except Exception as e:
                 logger.error(f"ChromaDB add failed: {e}")
-
-    msg = f"[STORE] Stored {stored_count}/{len(chunks)} chunks for repo {repo_id} in ChromaDB."
-    logger.info(msg)
-    print(msg)
+    
     return stored_count
+
+
+def store_repo_summary(repo_id: str, summary: str) -> None:
+    """Store the repository summary as a special document in ChromaDB."""
+    collection = get_or_create_collection(repo_id)
+    try:
+        # We use a fixed ID for the summary so it's easy to overwrite/retrieve
+        summary_id = f"repo_summary_{repo_id}"
+        embedding = model_manager.embed_query("repository overview summary structure tech stack")
+        
+        collection.upsert(
+            ids=[summary_id],
+            embeddings=[embedding],
+            documents=[summary],
+            metadatas=[{
+                "chunk_type": "repo_summary",
+                "repo_id": repo_id,
+                "file_path": "REPO_MAP.md",
+                "priority": 1.0
+            }]
+        )
+        logger.info(f"Stored repo summary for {repo_id}")
+    except Exception as e:
+        logger.error(f"Failed to store repo summary: {e}")
+
+
+def get_repo_summary(repo_id: str) -> str:
+    """Retrieve the repository summary from ChromaDB."""
+    collection = get_or_create_collection(repo_id)
+    try:
+        summary_id = f"repo_summary_{repo_id}"
+        results = collection.get(ids=[summary_id], include=["documents"])
+        if results and results.get("documents"):
+            return results["documents"][0]
+    except Exception as e:
+        logger.warning(f"Could not fetch repo summary for {repo_id}: {e}")
+    return ""
 
 
 def query_chromadb(
@@ -130,11 +172,20 @@ def query_chromadb(
         distance = results["distances"][0][i] if results.get("distances") else 1.0
         # ChromaDB cosine distance: distance=0 means identical, distance=1 means orthogonal
         # Convert to similarity: similarity = 1 - distance
-        similarity = round(1.0 - distance, 4)
+        similarity = 1.0 - distance
+        
+        # Apply priority boost
+        priority = float(metadata.get("priority", 0.5))
+        # Boost similarity: high priority (1.0) gets a 20% boost relative to base, 
+        # low priority (0.1) gets a penalty.
+        # boosted_similarity = similarity * (0.8 + 0.4 * priority)
+        # We'll use a slightly safer additive boost to maintain rank integrity for high similarity
+        boost_factor = 0.1 * (priority - 0.5) # ranges from -0.04 to +0.05
+        boosted_similarity = round(similarity + boost_factor, 4)
 
-        if similarity < similarity_threshold:
+        if boosted_similarity < similarity_threshold:
             logger.debug(
-                f"[RETRIEVE] Skipping chunk (similarity={similarity:.3f} < threshold={similarity_threshold})"
+                f"[RETRIEVE] Skipping chunk (boosted_sim={boosted_similarity:.3f} < threshold={similarity_threshold})"
             )
             continue
 
@@ -146,9 +197,12 @@ def query_chromadb(
                 "start_line": metadata.get("start_line", 0),
                 "end_line": metadata.get("end_line", 0),
                 "distance": distance,
-                "score": similarity,
+                "score": boosted_similarity,
             }
         )
+
+    # Re-sort items by boosted similarity
+    items.sort(key=lambda x: x["score"], reverse=True)
 
     if not items:
         print(

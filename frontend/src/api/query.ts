@@ -2,7 +2,7 @@ import { useAuthStore } from '../store/authStore';
 import { StreamEvent, DebugResult } from '../types';
 
 /**
- * CodeRAG Premium Query API
+ * CodeRAG Query API
  * 
  * Logic merged from modern Stitch architecture into current backend constraints.
  */

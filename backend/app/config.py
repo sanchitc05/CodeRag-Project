@@ -2,7 +2,7 @@ from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 
@@ -43,12 +43,11 @@ class Settings(BaseSettings):
 
     # Gemma 3 via Google AI API
     GEMINI_API_KEY: str = ""
-    GEMMA_MODEL: str = "gemma-3-4b-it"
+    GEMINI_REASONING_MODEL: str = "gemini-2.0-flash"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     @property
     def resolved_mysql_url(self) -> str:

@@ -10,6 +10,7 @@ class CodeChunk(TypedDict):
     """Represents a single chunk of source code."""
 
     chunk_id: str
+    repo_id: str
     file_path: str
     language: str
     chunk_type: str  # "function", "class", or "block"
@@ -17,6 +18,8 @@ class CodeChunk(TypedDict):
     start_line: int
     end_line: int
     content: str
+    priority: float  # 0.0 to 1.0, higher means more important
+    metadata: dict  # flexibility for extra info (size, complexity, etc.)
 
 
 # Map file extensions to language names
@@ -29,6 +32,8 @@ EXTENSION_MAP: dict[str, str] = {
     ".cpp": "cpp",
     ".c": "c",
     ".rb": "ruby",
+    ".md": "markdown",
+    ".json": "json",
 }
 
 SUPPORTED_EXTENSIONS: set[str] = set(EXTENSION_MAP.keys())
@@ -42,10 +47,14 @@ def _make_chunk(
     start_line: int,
     end_line: int,
     content: str,
+    repo_id: str = "default",
+    priority: float = 0.5,
+    metadata: dict = None,
 ) -> CodeChunk:
     """Create a CodeChunk dict with a unique ID."""
     return CodeChunk(
         chunk_id=str(uuid.uuid4()),
+        repo_id=repo_id,
         file_path=file_path,
         language=language,
         chunk_type=chunk_type,
@@ -53,6 +62,8 @@ def _make_chunk(
         start_line=start_line,
         end_line=end_line,
         content=content,
+        priority=priority,
+        metadata=metadata or {},
     )
 
 
@@ -62,6 +73,9 @@ def _split_into_blocks(
     language: str,
     block_size: int = 50,
     overlap: int = 0,
+    repo_id: str = "default",
+    priority: float = 0.5,
+    metadata: dict = None,
 ) -> list[CodeChunk]:
     """Split source code into fixed-size line blocks with optional overlap."""
     lines = source.splitlines(keepends=True)
@@ -84,6 +98,9 @@ def _split_into_blocks(
                     start_line=i + 1,
                     end_line=end,
                     content=block_content,
+                    repo_id=repo_id,
+                    priority=priority,
+                    metadata=metadata,
                 )
             )
         i += step
@@ -91,7 +108,13 @@ def _split_into_blocks(
     return chunks
 
 
-def chunk_python_file(source: str, file_path: str) -> list[CodeChunk]:
+def chunk_python_file(
+    source: str,
+    file_path: str,
+    repo_id: str = "default",
+    priority: float = 0.5,
+    metadata: dict = None,
+) -> list[CodeChunk]:
     """Parse a Python file using AST and extract functions and classes as chunks."""
     chunks: list[CodeChunk] = []
     lines = source.splitlines(keepends=True)
@@ -100,7 +123,15 @@ def chunk_python_file(source: str, file_path: str) -> list[CodeChunk]:
         tree = ast.parse(source)
     except SyntaxError:
         # File can't be parsed — fall back to line blocks
-        return _split_into_blocks(source, file_path, "python", block_size=50)
+        return _split_into_blocks(
+            source,
+            file_path,
+            "python",
+            block_size=50,
+            repo_id=repo_id,
+            priority=priority,
+            metadata=metadata,
+        )
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -124,26 +155,55 @@ def chunk_python_file(source: str, file_path: str) -> list[CodeChunk]:
                     start_line=start,
                     end_line=end,
                     content=content,
+                    repo_id=repo_id,
+                    priority=priority,
+                    metadata=metadata,
                 )
             )
 
     # Fall back to line blocks if no functions/classes were found
     if not chunks:
-        return _split_into_blocks(source, file_path, "python", block_size=50)
+        return _split_into_blocks(
+            source,
+            file_path,
+            "python",
+            block_size=50,
+            repo_id=repo_id,
+            priority=priority,
+            metadata=metadata,
+        )
 
     return chunks
 
 
 def chunk_generic_file(
-    source: str, file_path: str, language: str
+    source: str,
+    file_path: str,
+    language: str,
+    repo_id: str = "default",
+    priority: float = 0.5,
+    metadata: dict = None,
 ) -> list[CodeChunk]:
     """Split a non-Python source file into overlapping 60-line blocks."""
     return _split_into_blocks(
-        source, file_path, language, block_size=60, overlap=10
+        source,
+        file_path,
+        language,
+        block_size=60,
+        overlap=10,
+        repo_id=repo_id,
+        priority=priority,
+        metadata=metadata,
     )
 
 
-def chunk_file(source: str, file_path: str) -> list[CodeChunk]:
+def chunk_file(
+    source: str,
+    file_path: str,
+    repo_id: str = "default",
+    priority: float = 0.5,
+    metadata: dict = None,
+) -> list[CodeChunk]:
     """Detect language from extension and route to the appropriate chunker."""
     ext = os.path.splitext(file_path)[1].lower()
 
@@ -153,6 +213,10 @@ def chunk_file(source: str, file_path: str) -> list[CodeChunk]:
     language = EXTENSION_MAP[ext]
 
     if ext == ".py":
-        return chunk_python_file(source, file_path)
+        return chunk_python_file(
+            source, file_path, repo_id, priority, metadata
+        )
 
-    return chunk_generic_file(source, file_path, language)
+    return chunk_generic_file(
+        source, file_path, language, repo_id, priority, metadata
+    )

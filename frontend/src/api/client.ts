@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosE
 import { useAuthStore } from '../store/authStore';
 
 /**
- * CodeRAG Premium API Client
+ * CodeRAG API Client
  * 
  * Features:
  * - Singleton Axios instance.
@@ -10,7 +10,7 @@ import { useAuthStore } from '../store/authStore';
  * - Global 401 handling for session cleanup.
  */
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const client: AxiosInstance = axios.create({
   baseURL,

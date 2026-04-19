@@ -35,7 +35,9 @@ export const DebugReport: React.FC<{ result: DebugResult }> = ({ result }) => {
               <div className="p-2 bg-rose-500/10 rounded-xl text-rose-500 border border-rose-500/20">
                 <Bug size={18} />
               </div>
-              <h3 className="font-bold text-text-primary uppercase tracking-wider text-sm">Root Cause Identification</h3>
+              <h3 className="font-bold text-text-primary uppercase tracking-wider text-sm">
+                {result.intent === 'REPO_LEVEL' ? 'Repository Overview' : 'Root Cause Identification'}
+              </h3>
             </div>
             <ConfidenceBadge confidence={result.confidence} />
           </div>
@@ -54,7 +56,9 @@ export const DebugReport: React.FC<{ result: DebugResult }> = ({ result }) => {
               <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500 border border-emerald-500/20">
                 <Wrench size={18} />
               </div>
-              <h3 className="font-bold text-text-primary uppercase tracking-wider text-sm">Remediation Strategy</h3>
+              <h3 className="font-bold text-text-primary uppercase tracking-wider text-sm">
+                {result.intent === 'REPO_LEVEL' ? 'Strategic Context' : 'Remediation Strategy'}
+              </h3>
             </div>
             <div className="flex items-center gap-2">
                <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted transition-colors">
@@ -80,7 +84,7 @@ export const DebugReport: React.FC<{ result: DebugResult }> = ({ result }) => {
            <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{result.evidence.length} Code References</span>
         </div>
 
-        <div className="space-y-3">
+        <div className="evidence-grid">
           {result.evidence.map((item, idx) => (
             <div 
               key={idx} 

@@ -1,244 +1,236 @@
-import React, { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
-import { 
-  Plus, 
-  Trash2, 
-  Moon, 
-  Sun, 
-  Github, 
-  Database, 
-  Shield, 
-  Cpu, 
-  Globe,
-  Loader2,
-  Terminal,
-  Activity
+import React from 'react';
+import {
+  User,
+  Settings as SettingsIcon,
+  Bell,
+  Monitor,
+  Check,
+  ChevronRight,
+  Zap,
+  Globe
 } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
-import { ingestRepo } from '../api/query';
-
-function formatIngestError(err: any): string {
-  const detail = err?.response?.data?.detail;
-  if (typeof detail === 'string' && detail.trim()) return detail;
-  if (Array.isArray(detail) && detail.length > 0) {
-    const first = detail[0];
-    if (typeof first?.msg === 'string' && first.msg.trim()) return first.msg;
-  }
-  return err?.message || 'Ingestion failed';
-}
+import { useConfigStore } from '../store/configStore';
+import { toast } from 'react-hot-toast';
 
 /**
- * SettingsPage: Premium System Configuration
+ * Settings Page
+ * User configuration and interface preferences.
  */
 
 export const SettingsPage: React.FC = () => {
-  const user = useAuthStore((s) => s.user);
-  const [githubUrl, setGithubUrl] = useState('');
-  const [repoId, setRepoId] = useState('');
-  const [isIngestLoading, setIsIngestLoading] = useState(false);
-  const [repos, setRepos] = useState<string[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { theme, toggleTheme, settingsTab, setSettingsTab, userProfile, updateProfile } = useConfigStore();
+  const [formData, setFormData] = React.useState(userProfile);
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('coderag_repos');
-    setRepos(stored ? JSON.parse(stored) : []);
-  }, []);
+  // Sync formData when userProfile changes
+  React.useEffect(() => {
+    setFormData(userProfile);
+  }, [userProfile]);
 
-  const handleIngestRepo = async () => {
-    if (!githubUrl || !repoId) {
-      toast.error('Missing configuration parameters');
-      return;
-    }
+  const sections = [
+    { id: 'profile', title: 'Profile', icon: User, description: 'Manage your public identity and account details.' },
+    { id: 'appearance', title: 'Appearance', icon: Monitor, description: 'Customize themes and interface settings.' },
+    { id: 'account', title: 'Account', icon: Globe, description: 'Manage regional settings and account status.' },
+  ];
 
-    setIsIngestLoading(true);
-    try {
-      await ingestRepo(githubUrl, repoId);
-      const newRepos = [...repos, repoId];
-      setRepos(newRepos);
-      localStorage.setItem('coderag_repos', JSON.stringify(newRepos));
-      toast.success(`Context "${repoId}" synchronized`);
-      setGithubUrl('');
-      setRepoId('');
-    } catch (err: any) {
-      toast.error(formatIngestError(err));
-    } finally {
-      setIsIngestLoading(false);
-    }
+  const handleSave = async () => {
+    setIsSaving(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 800));
+    updateProfile(formData);
+    setIsSaving(false);
+    toast.success('Settings saved successfully');
   };
 
-  const handleRemoveRepo = (repoToRemove: string) => {
-    const newRepos = repos.filter((r) => r !== repoToRemove);
-    setRepos(newRepos);
-    localStorage.setItem('coderag_repos', JSON.stringify(newRepos));
-    toast.success(`Context removed from registry`);
-  };
-
-  return (
-    <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-         <h2 className="text-4xl font-black text-text-primary tracking-tighter">Command Center</h2>
-         <p className="text-text-muted text-sm leading-relaxed max-w-xl">
-           Configure your AI knowledge base, manage active repository contexts, and fine-tune your analysis engine.
-         </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Main Controls - Left 2 Columns */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Repository Ingestion Card */}
-          <div className="bg-surface border border-border rounded-[32px] overflow-hidden shadow-2xl">
-            <div className="px-8 py-6 border-b border-border bg-gradient-to-r from-accent/5 to-transparent flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                  <div className="p-2 bg-accent/10 rounded-xl text-accent">
-                     <Github size={20} />
-                  </div>
-                  <h3 className="font-bold text-text-primary uppercase tracking-widest text-xs">Knowledge Ingestion</h3>
-               </div>
-               <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">Ready to Sync</span>
-               </div>
-            </div>
-
-            <div className="p-8 space-y-6">
-              <div className="grid grid-cols-1 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">GitHub Endpoint</label>
-                  <div className="relative">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                    <input
-                      type="text"
-                      value={githubUrl}
-                      onChange={(e) => setGithubUrl(e.target.value)}
-                      placeholder="https://github.com/microsoft/vscode"
-                      className="w-full pl-12 pr-4 py-4 bg-background border border-border rounded-2xl text-sm text-text-primary focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">Context Identifier</label>
-                  <div className="relative">
-                    <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                    <input
-                      type="text"
-                      value={repoId}
-                      onChange={(e) => setRepoId(e.target.value)}
-                      placeholder="vscore-main-rag"
-                      className="w-full pl-12 pr-4 py-4 bg-background border border-border rounded-2xl text-sm text-text-primary focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleIngestRepo}
-                disabled={isIngestLoading}
-                className={`
-                  w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3
-                  ${isIngestLoading 
-                    ? 'bg-surface-elevated text-text-muted cursor-not-allowed' 
-                    : 'bg-accent text-background shadow-[0_8px_30px_rgba(var(--accent-rgb),0.2)] hover:scale-[1.02] active:scale-[0.98]'
-                  }
-                `}
-              >
-                {isIngestLoading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                {isIngestLoading ? 'Synchronizing Context...' : 'Initialize Synchronization'}
-              </button>
-            </div>
+  const renderProfileSection = () => (
+    <div className="space-y-8 animate-fade-in text-text-primary">
+      {/* Avatar Section */}
+      <div className="flex items-start gap-6 pb-8 border-b border-border/50">
+        <div className="relative group">
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center text-background text-3xl font-black shadow-xl group-hover:scale-[1.02] transition-transform">
+            {formData.fullName.charAt(0)}
           </div>
-
-          {/* Active Contexts Card */}
-          <div className="bg-surface border border-border rounded-[32px] overflow-hidden shadow-xl">
-             <div className="px-8 py-6 border-b border-border bg-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                   <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
-                      <Database size={20} />
-                   </div>
-                   <h3 className="font-bold text-text-primary uppercase tracking-widest text-xs">Active Knowledge Base</h3>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-background border border-border text-[10px] font-bold text-text-muted">
-                  {repos.length} REPOSITORIES
-                </span>
-             </div>
-
-             <div className="divide-y divide-border">
-                {repos.length === 0 ? (
-                  <div className="p-12 text-center text-text-muted text-sm italic">
-                    No active contexts initialized. Use the form above to start.
-                  </div>
-                ) : (
-                  repos.map((repo) => (
-                    <div key={repo} className="flex items-center justify-between p-6 px-8 hover:bg-white/5 transition-colors">
-                       <div className="flex flex-col">
-                          <span className="text-sm font-bold text-text-primary font-mono">{repo}</span>
-                          <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">Status: Operational</span>
-                       </div>
-                       <button
-                         onClick={() => handleRemoveRepo(repo)}
-                         className="p-3 rounded-xl bg-danger/5 text-danger hover:bg-danger/10 transition-colors"
-                       >
-                         <Trash2 size={16} />
-                       </button>
-                    </div>
-                  ))
-                )}
-             </div>
+          <button className="absolute -bottom-2 -right-2 p-2 bg-surface-elevated border border-border rounded-xl shadow-lg hover:text-accent transition-colors">
+            <SettingsIcon size={14} />
+          </button>
+        </div>
+        <div className="space-y-2">
+          <h4 className="text-lg font-bold text-text-primary">{formData.fullName}</h4>
+          <p className="text-xs text-text-muted">@{formData.username}</p>
+          <div className="flex gap-2">
+            <span className="px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-[9px] font-bold text-accent uppercase tracking-tighter">Verified Account</span>
+            <span className="px-2 py-0.5 rounded-md bg-surface border border-border text-[9px] font-bold text-text-muted uppercase tracking-tighter">Active Workspace</span>
           </div>
         </div>
+      </div>
 
-        {/* Sidebar Info - Right Column */}
-        <div className="space-y-8">
-           
-           {/* Account Status */}
-           <div className="p-8 bg-surface border border-border rounded-[32px] shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-                 <Shield size={64} className="text-accent" />
-              </div>
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6">Security Context</h4>
-              <div className="flex items-center gap-4 mb-6">
-                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-background font-black text-xl">
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
-                 </div>
-                 <div className="flex flex-col min-w-0">
-                    <p className="text-sm font-bold text-text-primary truncate">{user?.email}</p>
-                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Enterprise Access</p>
-                 </div>
-              </div>
-              <div className="p-4 rounded-2xl bg-background/50 border border-border flex items-center justify-between">
-                 <span className="text-[10px] text-text-muted font-bold uppercase">Token Status</span>
-                 <span className="text-[10px] text-text-primary font-mono bg-accent/20 px-2 py-0.5 rounded">Active</span>
-              </div>
-           </div>
+      {/* Form Fields */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">Full Name</label>
+          <input
+            type="text"
+            value={formData.fullName}
+            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            className="w-full px-4 py-3 bg-background border border-border rounded-2xl text-sm text-text-primary focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">Username</label>
+          <input
+            type="text"
+            value={formData.username}
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            className="w-full px-4 py-3 bg-background border border-border rounded-2xl text-sm text-text-primary focus:border-accent/40 focus:ring-4 focus:ring-accent/5 transition-all outline-none"
+          />
+        </div>
+      </div>
 
-           {/* System Performance */}
-           <div className="p-8 bg-surface border border-border rounded-[32px] shadow-lg">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6">System Telemetry</h4>
-              <div className="space-y-6">
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <Cpu size={16} className="text-text-muted" />
-                       <span className="text-xs font-bold text-text-secondary">AI Reasoning Peak</span>
-                    </div>
-                    <span className="text-xs font-mono text-accent">98.2%</span>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <Activity size={16} className="text-text-muted" />
-                       <span className="text-xs font-bold text-text-secondary">Latency (RAG)</span>
-                    </div>
-                    <span className="text-xs font-mono text-accent">42ms</span>
-                 </div>
-                 <div className="w-full h-1.5 bg-background rounded-full overflow-hidden border border-border">
-                    <div className="h-full w-3/4 bg-accent animate-pulse" />
-                 </div>
-              </div>
-           </div>
+      <div className="flex justify-end gap-3 pt-4 items-center">
+        <button
+          onClick={() => setFormData(userProfile)}
+          className="px-6 py-2.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-background transition-all"
+        >
+          Discard
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="px-8 py-2.5 rounded-xl text-xs font-bold bg-accent text-background shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </div>
+  );
 
+  const renderAppearanceSection = () => (
+    <div className="space-y-8 animate-fade-in text-text-primary">
+      <div className="grid grid-cols-2 gap-4">
+        <div
+          onClick={theme === 'light' ? toggleTheme : undefined}
+          className={`
+            p-6 rounded-2xl border-2 cursor-pointer transition-all
+            ${theme === 'dark' ? 'border-accent bg-accent/5 shadow-inner' : 'border-border bg-background hover:border-accent/30'}
+          `}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white">
+              <Zap size={18} fill="currentColor" />
+            </div>
+            {theme === 'dark' && <Check size={16} className="text-accent" />}
+          </div>
+          <p className="text-sm font-bold text-text-primary">Dark Mode</p>
+          <p className="text-[10px] text-text-muted mt-1">High contrast, low strain environment.</p>
+        </div>
+
+        <div
+          onClick={theme === 'dark' ? toggleTheme : undefined}
+          className={`
+            p-6 rounded-2xl border-2 cursor-pointer transition-all
+            ${theme === 'light' ? 'border-accent bg-accent/5 shadow-inner' : 'border-border bg-background hover:border-accent/30'}
+          `}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-900">
+              <Zap size={18} />
+            </div>
+            {theme === 'light' && <Check size={16} className="text-accent" />}
+          </div>
+          <p className="text-sm font-bold text-text-primary">Light Mode</p>
+          <p className="text-[10px] text-text-muted mt-1">Minimalist and clean aesthetics.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAccountSection = () => (
+    <div className="space-y-6 animate-fade-in text-text-primary">
+      <div className="p-6 bg-background border border-border rounded-2xl">
+        <h4 className="text-sm font-bold mb-4">Regional Settings</h4>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-secondary">Language</span>
+            <span className="font-bold">English (US)</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-secondary">Timezone</span>
+            <span className="font-bold">UTC-5 (New York)</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 bg-rose-500/5 border border-rose-500/20 rounded-2xl group">
+        <h4 className="text-sm font-bold text-rose-500 mb-2">Danger Zone</h4>
+        <p className="text-[10px] text-text-muted mb-4 leading-relaxed">Permanently delete your account and all associated data. This action is irreversible.</p>
+        <button className="px-4 py-2 border border-rose-500 text-rose-500 rounded-xl text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-all uppercase tracking-widest">
+          Delete Account
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 last:pb-20">
+
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <h2 className="text-4xl font-black text-text-primary tracking-tighter uppercase">Settings</h2>
+        <p className="text-text-muted text-sm leading-relaxed max-w-xl">
+          Manage your CodeRAG account and interface preferences.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+
+        {/* Navigation - Left Sidebar */}
+        <div className="md:col-span-1 space-y-2">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setSettingsTab(section.id)}
+              className={`
+                w-full flex items-center justify-between p-3 rounded-xl transition-all group text-left
+                ${settingsTab === section.id ? 'bg-accent/10 border border-accent/20 text-accent' : 'hover:bg-surface border border-transparent text-text-secondary'}
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <section.icon size={16} />
+                <span className="text-xs font-semibold">{section.title}</span>
+              </div>
+              <ChevronRight size={14} className={`transition-all ${settingsTab === section.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'}`} />
+            </button>
+          ))}
+        </div>
+
+        {/* Content Area - Right 3 Columns */}
+        <div className="md:col-span-3 space-y-8">
+
+          <div className="bg-surface border border-border rounded-[32px] overflow-hidden shadow-2xl min-h-[500px]">
+            <div className="px-8 py-6 border-b border-border bg-gradient-to-r from-accent/5 to-transparent">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent/10 rounded-xl text-accent">
+                    {React.createElement(sections.find(s => s.id === settingsTab)?.icon || User, { size: 20 })}
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="font-black text-text-primary uppercase tracking-widest text-xs">
+                      {sections.find(s => s.id === settingsTab)?.title}
+                    </h3>
+                    <p className="text-[10px] text-text-muted">
+                      {sections.find(s => s.id === settingsTab)?.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8">
+              {settingsTab === 'profile' && renderProfileSection()}
+              {settingsTab === 'appearance' && renderAppearanceSection()}
+              {settingsTab === 'account' && renderAccountSection()}
+            </div>
+          </div>
         </div>
       </div>
     </div>

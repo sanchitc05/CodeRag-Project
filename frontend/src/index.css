@@ -4,32 +4,51 @@
 
 @layer base {
   :root {
-    --background: 222 47% 4%;
-    --foreground: 213 31% 91%;
-    --card: 222 47% 4%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 4%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 188 94% 42%;
-    --primary-foreground: 222 47% 4%;
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 222 47% 11%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 222 47% 11%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 47% 11%;
-    --input: 222 47% 11%;
-    --ring: 188 94% 42%;
-    --radius: 0.75rem;
+    /* Dark Theme (Default) */
+    --background: #0a0f14;
+    --surface: #0d1520;
+    --surface-elevated: #111e2c;
+    --border: #1a2e3d;
+    --border-hover: #2a4560;
+    --accent: #00d4ff;
+    --accent-rgb: 0, 212, 255;
+    --accent-dim: #0ea5c9;
+    --text-primary: #e2eaf0;
+    --text-secondary: #7a9ab0;
+    --text-muted: #3d5a6e;
+    --accent-glow: rgba(0, 212, 255, 0.12);
+  }
+
+  .light {
+    /* Light Theme Overlay */
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --surface-elevated: #f1f5f9;
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --accent: #0ea5e9;
+    --accent-rgb: 14, 165, 233;
+    --accent-dim: #0284c7;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent-glow: rgba(14, 165, 233, 0.08);
+  }
+
+  * {
+    @apply transition-colors duration-200;
   }
 
   body {
-    @apply bg-background text-text-primary antialiased selection:bg-accent/30 selection:text-accent;
+    background-color: var(--background);
+    color: var(--text-primary);
+    @apply antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    font-family: 'Inter', sans-serif;
+  }
+
+  ::selection {
+    background-color: rgba(var(--accent-rgb), 0.3);
+    color: var(--accent);
   }
 }
 
@@ -44,15 +63,21 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-surface-elevated rounded-full hover:bg-border transition-colors;
+    background-color: var(--surface-elevated);
+    @apply rounded-full hover:bg-border transition-colors;
   }
 
   .glass-panel {
-    @apply bg-background/50 backdrop-blur-md border border-border;
+    background-color: color-mix(in srgb, var(--background), transparent 50%);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
   }
 
   .glass-card {
-    @apply bg-surface/40 backdrop-blur-md border border-border/50 rounded-xl hover:border-accent/30 transition-all duration-300;
+    background-color: color-mix(in srgb, var(--surface), transparent 60%);
+    backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--border), transparent 50%);
+    @apply rounded-xl hover:border-accent/30 transition-all duration-300;
   }
 
   .focus-ring {
@@ -60,8 +85,14 @@
   }
 }
 
-h1, h2, h3, h4, h5, h6 {
-  @apply tracking-tight font-bold text-text-primary;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply tracking-tight font-bold;
+  color: var(--text-primary);
 }
 
 code {
@@ -77,11 +108,67 @@ code {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-bottom {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Global Theme Transitions */
+* {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom Scrollbar Global Override */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Page Transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Glassmorphism focus utility */
+.glass-focus-within:focus-within {
+  box-shadow: 0 0 0 4px var(--accent-glow);
+  border-color: var(--accent);
 }

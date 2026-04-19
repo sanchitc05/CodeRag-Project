@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { Code2, ArrowRight, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
 
 /**
- * CodeRAG Premium RegisterPage
+ * CodeRAG Register
  */
 
 const RegisterPage: React.FC = () => {
@@ -16,7 +16,7 @@ const RegisterPage: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
 
@@ -66,37 +66,37 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans">
       <div className="container mx-auto max-w-5xl flex-1 flex flex-col lg:flex-row items-center justify-center p-6 gap-12 lg:gap-24">
-        
+
         {/* Left Side: Context */}
         <div className="hidden lg:block w-full lg:w-1/2">
-           <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-8">
-              <ShieldCheck className="text-accent" size={32} />
-           </div>
-           <h1 className="text-5xl font-bold text-text-primary mb-6 leading-tight">
-             Secure your <span className="text-accent">knowledge</span> base.
-           </h1>
-           <p className="text-text-secondary text-xl leading-relaxed mb-10">
-             Join engineering teams using CodeRAG to automate debugging and architect reviews with secure, tenant-isolated AI.
-           </p>
+          <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-8">
+            <ShieldCheck className="text-accent" size={32} />
+          </div>
+          <h1 className="text-5xl font-bold text-text-primary mb-6 leading-tight">
+            Secure <span className="text-accent">code analysis</span>.
+          </h1>
+          <p className="text-text-secondary text-xl leading-relaxed mb-10">
+            Join developers using CodeRAG to analyze their codebases with secure, isolated sessions.
+          </p>
 
-           <div className="space-y-6">
-             {[
-               "End-to-end encrypted codebase analysis",
-               "Dedicated tenant isolation by default",
-               "Zero-trust agentic reasoning"
-             ].map((text, i) => (
-               <div key={i} className="flex items-center gap-3 text-text-secondary font-medium">
-                  <CheckCircle2 size={20} className="text-accent shrink-0" />
-                  <span>{text}</span>
-               </div>
-             ))}
-           </div>
+          <div className="space-y-6">
+            {[
+              "End-to-end encrypted codebase analysis",
+              "Session isolation by default",
+              "Advanced agentic code reasoning"
+            ].map((text, i) => (
+              <div key={i} className="flex items-center gap-3 text-text-secondary font-medium">
+                <CheckCircle2 size={20} className="text-accent shrink-0" />
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Right Side: Register Form */}
         <div className="w-full lg:w-1/2 max-w-md bg-surface border border-border rounded-3xl p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4">
-             <Code2 className="text-text-muted/10" size={64} />
+            <Code2 className="text-text-muted/10" size={64} />
           </div>
 
           <div className="relative z-10">
@@ -131,19 +131,18 @@ const RegisterPage: React.FC = () => {
                   onChange={(e) => updateField('password', e.target.value)}
                   className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent/50 focus:ring-1 focus:ring-accent/10 outline-none transition-all"
                 />
-                
+
                 {/* Password Strength Meter */}
                 <div className="flex gap-1 mt-2">
-                   {[25, 50, 75, 100].map((level) => (
-                     <div 
-                       key={level} 
-                       className={`h-1 flex-1 rounded-full transition-colors ${
-                         passwordStrength >= level 
-                           ? (passwordStrength <= 50 ? 'bg-amber-500' : 'bg-accent') 
-                           : 'bg-border'
-                       }`} 
-                     />
-                   ))}
+                  {[25, 50, 75, 100].map((level) => (
+                    <div
+                      key={level}
+                      className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength >= level
+                          ? (passwordStrength <= 50 ? 'bg-amber-500' : 'bg-accent')
+                          : 'bg-border'
+                        }`}
+                    />
+                  ))}
                 </div>
               </div>
 

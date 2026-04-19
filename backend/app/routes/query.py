@@ -19,8 +19,9 @@ from app.services.agent_state import initial_state
 from app.services.agent_graph import agent as langgraph_agent
 from app.services.auth_service import get_current_user
 from app.services.elasticsearch_service import index_logs_from_repo
-from app.services.embeddings import embed_and_store_chunks, get_or_create_collection
+from app.services.embeddings import embed_and_store_chunks, get_or_create_collection, store_repo_summary
 from app.services.ingestion import ingest_repository
+from app.services.repo_summary import generate_repo_summary
 
 router = APIRouter(tags=["query"])
 logger = logging.getLogger(__name__)
@@ -40,7 +41,14 @@ def run_ingestion_pipeline(github_url: str, repo_id: str) -> None:
         repo_path = result.get("repo_path", "")
         chunks = result.get("chunks", [])
 
+        # 1. Store code chunks
         stored_chunks_count = embed_and_store_chunks(chunks, repo_id)
+        
+        # 2. Generate and store repository summary
+        summary = generate_repo_summary(repo_path, chunks)
+        store_repo_summary(repo_id, summary)
+
+        # 3. Index logs
         indexed_logs_count = index_logs_from_repo(repo_path, repo_id)
 
         _ingestion_status[repo_id] = {

@@ -55,6 +55,36 @@ def clone_repository(github_url: str, repo_id: str) -> str:
         raise ValueError(f"Failed to clone {github_url}: {e}") from e
 
 
+FILE_PRIORITY_MAP: dict[str, float] = {
+    "README.md": 1.0,
+    "package.json": 1.0,
+    "requirements.txt": 1.0,
+    "main.py": 1.0,
+    "index.js": 1.0,
+    "app.py": 1.0,
+    "docker-compose.yml": 0.9,
+    "Makefile": 0.9,
+}
+
+
+def calculate_file_priority(relative_path: str) -> float:
+    """Calculate a priority score (0-1) for a file based on its name and depth."""
+    filename = os.path.basename(relative_path)
+    
+    # Check exact match in priority map
+    if filename in FILE_PRIORITY_MAP:
+        return FILE_PRIORITY_MAP[filename]
+    
+    # Base priority starts higher for root-level files
+    depth = relative_path.count(os.sep)
+    if depth == 0:
+        return 0.8
+    elif depth == 1:
+        return 0.7
+    else:
+        return max(0.4, 0.6 - (depth * 0.05))
+
+
 def extract_chunks_from_repo(
     repo_path: str, repo_id: str
 ) -> list[CodeChunk]:
@@ -79,6 +109,8 @@ def extract_chunks_from_repo(
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     source = f.read()
+                    f.seek(0, os.SEEK_END)
+                    file_size = f.tell()
             except (OSError, IOError) as e:
                 logger.warning(f"Skipping unreadable file {relative_path}: {e}")
                 continue
@@ -86,16 +118,24 @@ def extract_chunks_from_repo(
             if not source.strip():
                 continue
 
-            file_chunks = chunk_file(source, relative_path)
-            # Tag every chunk with the repo_id
-            for chunk in file_chunks:
-                chunk["repo_id"] = repo_id  # type: ignore[typeddict-unknown-key]
+            priority = calculate_file_priority(relative_path)
+            metadata = {
+                "file_size": file_size,
+                "depth": relative_path.count(os.sep),
+            }
+
+            file_chunks = chunk_file(
+                source, 
+                relative_path, 
+                repo_id=repo_id, 
+                priority=priority, 
+                metadata=metadata
+            )
             all_chunks.extend(file_chunks)
 
     logger.info(
         f"[INGEST] Parsed {file_count} files, extracted {len(all_chunks)} chunks from {repo_id}."
     )
-    print(f"[INGEST] Parsed {file_count} files, extracted {len(all_chunks)} chunks from {repo_id}.")
     return all_chunks
 
 
