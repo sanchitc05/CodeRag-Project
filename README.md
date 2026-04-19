@@ -157,6 +157,10 @@ cd CodeRag-Project
 
 ### 2️⃣ Start Core Services
 
+Use this only if you want to start the databases/search services by themselves.
+
+If you plan to run the full Docker stack in the next step, you can skip this.
+
 ```bash
 docker compose up mysql chromadb elasticsearch
 ```
@@ -174,6 +178,30 @@ Elasticsearch → localhost:9200
 > ```bash
 > curl http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=60s
 > ```
+
+### 2.1️⃣ Docker Compose (Recommended)
+
+Use this flow if you want to run the full stack in Docker:
+
+```bash
+# Start full stack
+docker compose up -d mysql chromadb elasticsearch backend frontend
+
+# Returning user (fast path: reuse cached layers/dependencies)
+docker compose build backend
+docker compose up -d backend frontend
+
+# If backend dependencies changed, rebuild backend image
+docker compose build --no-cache backend
+docker compose up -d backend
+
+# One-time legacy DB fix (safe to rerun)
+docker compose exec backend python -m scratch.migrate_user
+```
+
+Notes:
+- If the migration prints duplicate column errors for `username` or `full_name`, the schema is already updated.
+- Prefer `python -m scratch.migrate_user` over `python scratch/migrate_user.py` in Docker so imports resolve correctly.
 
 ### 3️⃣ Backend Setup
 
@@ -199,7 +227,7 @@ pip install -r requirements.txt
 cp .env.example .env
 
 # Edit .env and add:
-# GOOGLE_API_KEY
+# GEMINI_API_KEY
 # MYSQL credentials
 # JWT secret
 
@@ -222,7 +250,7 @@ npm install
 # Start frontend server
 npm run dev
 ```
-Frontend URL: http://localhost:5176
+Frontend URL: http://localhost:5173
 
 ### 5️⃣ Ready to Use
 Open your browser and start chatting with repositories using CodeRAG 🚀
