@@ -107,7 +107,39 @@ Built on a modern, scalable, and intelligent AI-powered technology stack.
 
 ---
 
+## 🗂️ Project Structure
+
+```
+CodeRag-Project/
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI app entry point
+│   │   ├── models/          # SQLAlchemy ORM models
+│   │   ├── routes/          # API routes (auth, query, history)
+│   │   ├── services/        # Business logic & RAG pipeline
+│   │   └── utils/           # Logging, health checks, exceptions
+│   ├── requirements.txt
+│   └── .env
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/           # Route-level pages
+│   │   ├── hooks/           # Custom React hooks
+│   │   └── store/           # Zustand global state
+│   └── package.json
+├── scripts/
+│   ├── setup.sh             # One-click initialization
+│   ├── verify.sh            # Health verification
+│   └── teardown.sh          # Clean shutdown
+├── docker-compose.yml
+├── Makefile
+└── README.md
+```
+
+---
+
 ## 🚀 Getting Started
+
 Follow these steps to run a local instance of **CodeRAG** on your machine.
 
 ### Prerequisites
@@ -136,6 +168,12 @@ MySQL Database → localhost:3306
 ChromaDB Vector Store → localhost:8000
 
 Elasticsearch → localhost:9200
+
+> ⚠️ **Wait for Elasticsearch to be fully healthy before starting the backend.**
+> Elasticsearch can take **30–60 seconds** to initialize. You can monitor readiness with:
+> ```bash
+> curl http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=60s
+> ```
 
 ### 3️⃣ Backend Setup
 
@@ -166,9 +204,6 @@ cp .env.example .env
 # JWT secret
 
 # Start backend server
-python main.py
-
-# Alternative command
 uvicorn app.main:app --reload
 ```
 Backend URL: http://localhost:8000
@@ -187,7 +222,7 @@ npm install
 # Start frontend server
 npm run dev
 ```
-Frontend URL: http://localhost:5173
+Frontend URL: http://localhost:5176
 
 ### 5️⃣ Ready to Use
 Open your browser and start chatting with repositories using CodeRAG 🚀
@@ -196,44 +231,60 @@ Open your browser and start chatting with repositories using CodeRAG 🚀
 
 ## 🔑 Environment Variables
 
-Create a `.env` file inside the **backend/** directory and configure the following values:
+Create a `.env` file in the **project root** (or copy `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+Then configure the following values:
 
 ```env
-# Google Gemini API Key
-GOOGLE_API_KEY=your_google_api_key
+# App Mode ("local" for dev, "docker" for Docker Compose)
+APP_ENV=local
 
-# JWT Authentication
-JWT_SECRET_KEY=your_super_secret_key
-
-# MySQL Configuration
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
+# MySQL
+MYSQL_ROOT_PASSWORD=rootpassword
 MYSQL_DATABASE=coderag
+MYSQL_USER=coderag_user
+MYSQL_PASSWORD=coderag_pass
+MYSQL_URL=mysql+pymysql://coderag_user:coderag_pass@mysql:3306/coderag
+MYSQL_HOST_PORT=3307
 
-# ChromaDB Configuration
-CHROMA_HOST=localhost
+# Security
+SECRET_KEY=your-secret-key-change-in-production
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# ChromaDB
+CHROMA_HOST=chromadb
 CHROMA_PORT=8000
+CHROMA_HOST_PORT=8001
 
-# Elasticsearch Configuration
-ELASTICSEARCH_HOST=localhost
-ELASTICSEARCH_PORT=9200
+# Elasticsearch
+ELASTICSEARCH_URL=http://elasticsearch:9200
+
+# Storage Paths
+MODEL_CACHE_DIR=/app/model_cache
+REPOS_DIR=/app/repos
+
+# Google Gemini API
+GEMINI_API_KEY=your_api_key_here
+GEMINI_REASONING_MODEL=gemini-2.0-flash
 ```
-📌 Notes
-Replace all placeholder values with your actual credentials.
 
-Keep your .env file private and never push it to GitHub.
+📌 **Notes**
 
-Make sure Docker services are running before starting the backend.
-
-Restart the backend server after changing environment variables.
+- Replace all placeholder values with your actual credentials.
+- Keep your `.env` file private and never push it to GitHub.
+- Make sure Docker services are running before starting the backend.
+- Restart the backend server after changing environment variables.
 
 ---
 
 ## 🤖 AI Model Used
 
-CodeRAG uses **Google Gemini API** for intelligent response generation.
+CodeRAG uses **Google Gemini 2.0 Flash** for intelligent response generation — a state-of-the-art multimodal LLM optimized for speed and accuracy.
 
 ### ✨ Capabilities
 - Context-aware repository conversations
@@ -347,5 +398,37 @@ Ask questions.
 Get accurate answers.
 Understand faster.
 Build smarter.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+```
+MIT License
+
+Copyright (c) 2026 Sneha Singhania
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+See the [LICENSE](./LICENSE) file for full details.
 
 ---
